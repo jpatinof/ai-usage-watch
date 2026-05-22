@@ -1,0 +1,14 @@
+node_modules/
+
+# Local AI/tooling metadata
+.atl/
+
+# Local runtime state
+.env
+.env.*
+*.log
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

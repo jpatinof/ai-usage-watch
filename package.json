@@ -1,0 +1,21 @@
+{
+  "name": "opencode-go-usage",
+  "version": "1.0.0",
+  "description": "Check OpenCode Go subscription usage from the terminal",
+  "type": "module",
+  "bin": {
+    "opencode-go-usage": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "help": "node src/index.js --help"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["opencode", "go", "usage", "subscription"],
+  "license": "MIT"
+}
