@@ -1,4 +1,6 @@
-import { chmodSync, existsSync, mkdirSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createInterface } from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
 import { chromium, type BrowserContext, type Page } from 'playwright';
 import { saveDebugHtml } from '../browser.js';
 import { parseClaudeAiUsage, toUsageResults } from '../parsers/claude-ai-parser.js';
@@ -6,6 +8,8 @@ import { PROFILE_DIR_CLAUDE_AI } from '../paths.js';
 import type { AppConfig, UsageProvider, UsageResult } from '../types.js';
 
 const USAGE_URL = 'https://claude.ai/settings/usage';
+const AUTH_MARKER_FILE = `${PROFILE_DIR_CLAUDE_AI}/.authenticated`;
+const INTERACTIVE_LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
 
 function ensureProfileDir(): void {
   if (!existsSync(PROFILE_DIR_CLAUDE_AI)) {
@@ -25,6 +29,29 @@ function launchClaudeAiContext(config: AppConfig, headless: boolean): Promise<Br
     executablePath: config.chromiumPath,
     args: ['--disable-dev-shm-usage', '--disable-blink-features=AutomationControlled'],
   });
+}
+
+function hasClaudeAiAuthenticatedProfile(): boolean {
+  return existsSync(AUTH_MARKER_FILE);
+}
+
+function markClaudeAiAuthenticatedProfile(): void {
+  try {
+    ensureProfileDir();
+    writeFileSync(AUTH_MARKER_FILE, new Date().toISOString(), { mode: 0o600 });
+  } catch {
+    // Best effort: the browser profile still owns the real session state.
+  }
+}
+
+async function waitForManualLoginConfirmation(): Promise<void> {
+  const rl = createInterface({ input, output });
+
+  try {
+    await rl.question('  After the Claude.ai browser is logged in, press Enter here to continue... ');
+  } finally {
+    rl.close();
+  }
 }
 
 export function isClaudeAiAuthUrl(rawUrl: string): boolean {
@@ -47,7 +74,10 @@ async function extractClaudeAiUsage(config: AppConfig, page: Page): Promise<Usag
   const pageText = await page.evaluate(() => document.body.innerText);
   const rows = parseClaudeAiUsage(pageText);
 
-  if (rows.length > 0) return toUsageResults(rows);
+  if (rows.length > 0) {
+    markClaudeAiAuthenticatedProfile();
+    return toUsageResults(rows);
+  }
 
   await saveDebugHtml(config, page, 'Claude.ai usage not found');
   throw new Error(`Could not fetch usage data from ${USAGE_URL}. Use --debug to save page HTML for inspection.`);
@@ -64,7 +94,12 @@ async function runClaudeAiInteractiveLogin(config: AppConfig): Promise<UsageResu
     await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded' });
 
     console.log('  Please complete login in the browser...');
-    await page.waitForURL(url => !isClaudeAiAuthUrl(url.toString()), { timeout: 300000 });
+    console.log('  If Anthropic sends a magic link, open or paste that link in this browser window, not your regular browser.');
+    await Promise.race([
+      page.waitForURL(url => !isClaudeAiAuthUrl(url.toString()), { timeout: INTERACTIVE_LOGIN_TIMEOUT_MS }),
+      waitForManualLoginConfirmation(),
+    ]);
+    await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
     await waitForClaudeAiUsagePage(page);
 
@@ -95,11 +130,15 @@ export const claudeAiProvider: UsageProvider = {
     let page: Page | undefined;
 
     try {
+      if (!hasClaudeAiAuthenticatedProfile()) {
+        if (config.json) throw new Error('Claude.ai session is not authenticated. Run without --json to complete browser login.');
+        return await runClaudeAiInteractiveLogin(config);
+      }
+
       context = await launchClaudeAiContext(config, true);
       page = await context.newPage();
 
       await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      await waitForClaudeAiUsagePage(page);
 
       if (isClaudeAiAuthUrl(page.url())) {
         if (config.json) throw new Error('Claude.ai session is not authenticated. Run without --json to complete browser login.');
@@ -107,6 +146,8 @@ export const claudeAiProvider: UsageProvider = {
         context = undefined;
         return await runClaudeAiInteractiveLogin(config);
       }
+
+      await waitForClaudeAiUsagePage(page);
 
       return await extractClaudeAiUsage(config, page);
     } catch (error) {
