@@ -13,6 +13,8 @@ test('getBars renders ten-step progress bar', () => {
   assert.equal(getBars(0), '░░░░░░░░░░');
   assert.equal(getBars(50), '█████░░░░░');
   assert.equal(getBars(100), '██████████');
+  assert.equal(getBars(125), '██████████');
+  assert.equal(getBars(-25), '░░░░░░░░░░');
 });
 
 test('extractUsages reads percentage usage blocks', () => {
@@ -32,10 +34,23 @@ test('extractUsages reads percentage usage blocks', () => {
 });
 
 test('extractUsages falls back to dollar usage patterns', () => {
-  const usages = extractUsages('', '$6 / $12 $15 / $30 $30 / $60');
+  const usages = extractUsages('', '$15 / $12 $15 / $30 $30 / $60');
 
   assert.equal(usages.length, 3);
-  assert.equal(usages[0].pct, 50);
+  assert.equal(usages[0].pct, 125);
+  assert.equal(usages[0].bars, '██████████');
   assert.equal(usages[1].pct, 50);
   assert.equal(usages[2].pct, 50);
+});
+
+test('extractUsages fills missing percentage blocks from dollar patterns', () => {
+  const text = 'Rolling Usage 125% Resets in 2 hours. Weekly Usage $15 / $30';
+  const usages = extractUsages(text, '');
+
+  assert.equal(usages.length, 2);
+  assert.equal(usages[0].name, '5h');
+  assert.equal(usages[0].pct, 125);
+  assert.equal(usages[0].bars, '██████████');
+  assert.equal(usages[1].name, 'Weekly');
+  assert.equal(usages[1].pct, 50);
 });

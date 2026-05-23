@@ -68,3 +68,29 @@ test('resolveConfig requires explicit workspace ID', () => {
     chromiumCandidates: [browser],
   }), /Missing workspace ID/);
 });
+
+test('resolveConfig rejects malformed JSON config values', () => {
+  const { browser, dir, missingEnv } = fixturePaths();
+  const configFile = join(dir, 'config.json');
+  writeFileSync(configFile, JSON.stringify({ workspaceId: 123, chromiumPath: browser, notify: true }));
+
+  assert.throws(() => resolveConfig(parseArgs([]), { OPENCODE_GO_CONFIG: configFile }, {
+    defaultEnvFile: missingEnv,
+    localEnvFile: missingEnv,
+    chromiumCandidates: [browser],
+  }), /Invalid workspaceId/);
+});
+
+test('resolveConfig coerces boolean-like notify from JSON config', () => {
+  const { browser, dir, missingEnv } = fixturePaths();
+  const configFile = join(dir, 'config.json');
+  writeFileSync(configFile, JSON.stringify({ workspaceId: 'wrk_config', chromiumPath: browser, notify: 'false' }));
+
+  const config = resolveConfig(parseArgs([]), { OPENCODE_GO_CONFIG: configFile }, {
+    defaultEnvFile: missingEnv,
+    localEnvFile: missingEnv,
+    chromiumCandidates: [browser],
+  });
+
+  assert.equal(config.notify, false);
+});

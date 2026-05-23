@@ -1,7 +1,8 @@
 import type { UsageResult } from './types.js';
 
 export function getBars(pct: number): string {
-  const filled = Math.round(pct / 10);
+  const clampedPct = Math.max(0, Math.min(100, pct));
+  const filled = Math.round(clampedPct / 10);
   const empty = 10 - filled;
   return '█'.repeat(filled) + '░'.repeat(empty);
 }
@@ -40,8 +41,6 @@ export function extractUsages(text: string, html: string): UsageResult[] {
     }
   }
 
-  if (results.length > 0) return results;
-
   const dollarPatterns = [
     { name: '5h', limit: 12, regex: /\$([0-9.]+)\s*\/\s*\$?12(?!\d)/i },
     { name: 'Weekly', limit: 30, regex: /\$([0-9.]+)\s*\/\s*\$?30(?!\d)/i },
@@ -49,11 +48,13 @@ export function extractUsages(text: string, html: string): UsageResult[] {
   ];
 
   for (const pattern of dollarPatterns) {
+    if (results.some(result => result.name === pattern.name)) continue;
+
     const match = text.match(pattern.regex) || html.match(pattern.regex);
     if (!match?.[1]) continue;
 
     const used = Number.parseFloat(match[1]);
-    const pct = Math.min(100, Math.round((used / pattern.limit) * 100));
+    const pct = Math.round((used / pattern.limit) * 100);
     results.push({ name: pattern.name, used, limit: pattern.limit, pct, bars: getBars(pct), reset: '' });
   }
 

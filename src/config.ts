@@ -10,11 +10,49 @@ export interface ResolveConfigOptions {
   chromiumCandidates?: string[];
 }
 
+function validateConfigObject(value: unknown, configPath: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Config file at ${configPath} must contain a JSON object.`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function readOptionalString(config: Record<string, unknown>, key: keyof FileConfig, configPath: string): string | undefined {
+  const value = config[key];
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') throw new Error(`Invalid ${String(key)} in ${configPath}: expected a string.`);
+
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error(`Invalid ${String(key)} in ${configPath}: expected a non-empty string.`);
+  return trimmed;
+}
+
+function readOptionalBoolean(config: Record<string, unknown>, key: keyof FileConfig, configPath: string): boolean | undefined {
+  const value = config[key];
+  if (value === undefined) return undefined;
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+
+  throw new Error(`Invalid ${String(key)} in ${configPath}: expected a boolean.`);
+}
+
+function validateFileConfig(value: unknown, configPath: string): FileConfig {
+  const config = validateConfigObject(value, configPath);
+
+  return {
+    workspaceId: readOptionalString(config, 'workspaceId', configPath),
+    chromiumPath: readOptionalString(config, 'chromiumPath', configPath),
+    notify: readOptionalBoolean(config, 'notify', configPath),
+  };
+}
+
 export function readConfigFile(configPath: string): FileConfig {
   if (!existsSync(configPath)) return {};
 
   try {
-    return JSON.parse(readFileSync(configPath, 'utf-8')) as FileConfig;
+    return validateFileConfig(JSON.parse(readFileSync(configPath, 'utf-8')), configPath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`Could not read config file at ${configPath}: ${message}`);

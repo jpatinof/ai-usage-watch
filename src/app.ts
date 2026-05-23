@@ -1,16 +1,8 @@
-import { AUTH_FILE } from './paths.js';
-import { getApiKey } from './auth.js';
 import { extractUsageFromWorkspace, launchPersistentContext, looksUnauthenticated, runInteractiveLogin, saveDebugHtml } from './browser.js';
 import { formatUsageNotification, maybeNotify, notifyStart } from './notifier.js';
 import type { AppConfig, UsageResult } from './types.js';
 
 export async function getUsage(config: AppConfig): Promise<UsageResult[]> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    maybeNotify(config.notify, 'OpenCode Go', 'No OpenCode credentials found. Run /connect in OpenCode first.');
-    throw new Error(`No OpenCode credentials found at ${AUTH_FILE}. Run /connect in OpenCode first.`);
-  }
-
   if (!config.json) console.log('\n  Checking your OpenCode Go stats...\n');
   notifyStart(config.notify);
 
