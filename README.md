@@ -1,8 +1,8 @@
 # AI Usage Watch
 
-Monitor your AI subscription usage from the terminal, optionally with a desktop notification for Hyprland or any Linux desktop that supports `notify-send`.
+Monitor your AI subscription usage from the terminal, with optional desktop notifications for Hyprland or any Linux desktop that supports `notify-send`.
 
-The project now has a small provider seam so more usage sources can be added later. Today, only OpenCode Go is supported.
+Supports multiple providers — currently **OpenCode Go** and **Claude.ai** (personal Pro subscription).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
@@ -10,8 +10,14 @@ The project now has a small provider seam so more usage sources can be added lat
 ## Requirements
 
 - Node.js 18+
-- Chromium, Chromium Browser, Google Chrome, or Brave
-- An OpenCode Go subscription and workspace ID
+- Chromium, Chromium Browser, Google Chrome, or Brave (used by both providers)
+
+Provider-specific:
+
+| Provider | Extra requirement |
+|---|---|
+| `opencode-go` | OpenCode Go subscription + workspace ID |
+| `claude-ai` | Claude.ai account (Pro or higher) |
 
 ## Installation
 
@@ -23,21 +29,17 @@ npm run build
 npm link
 ```
 
-After `npm link`, the command is available as:
+After `npm link`, the command is available globally:
 
 ```bash
 ai-usage-watch --help
 ```
 
-You can also run it without linking:
-
-```bash
-npm run help
-```
-
 ## Configuration
 
-The fastest local setup is a `.env` file. Copy the example and edit your workspace ID:
+### OpenCode Go
+
+The fastest setup is a `.env` file:
 
 ```bash
 cp .env.example .env
@@ -49,9 +51,9 @@ OPENCODE_WORKSPACE_ID=wrk_your_workspace_id
 CHROMIUM_PATH=/usr/bin/chromium
 ```
 
-For an installed/global setup, you can also create `~/.config/ai-usage-watch/.env` with the same variables. This works no matter where you run `ai-usage-watch` from.
+For a global setup, create `~/.config/ai-usage-watch/.env` with the same variables.
 
-If you prefer JSON config, create `~/.config/ai-usage-watch/config.json`:
+Or use JSON config at `~/.config/ai-usage-watch/config.json`:
 
 ```json
 {
@@ -62,11 +64,41 @@ If you prefer JSON config, create `~/.config/ai-usage-watch/config.json`:
 }
 ```
 
-`provider` defaults to `opencode-go`, so existing configs do not need to change.
+`workspaceId` is required. Without it the tool stops before querying the wrong workspace.
 
-`workspaceId` is required for OpenCode Go. Without it, the checker stops instead of querying the wrong workspace.
+### Claude.ai
 
-`chromiumPath` is optional when your browser is installed in one of these paths:
+No API key or workspace ID needed. The provider uses a persistent browser session — the same way the OpenCode Go provider works.
+
+**First run:**
+
+```bash
+ai-usage-watch --provider claude-ai
+```
+
+A browser window will open. Log in to your Claude.ai account, then close or leave the browser — the tool will detect the authenticated session and continue automatically.
+
+After the first login, the session is saved to `~/.config/ai-usage-watch/browser-profile-claude-ai/` and reused on every subsequent run. No login prompt will appear again unless the session expires.
+
+To set `claude-ai` as the default provider, add it to your config:
+
+```env
+AI_USAGE_WATCH_PROVIDER=claude-ai
+```
+
+or in `~/.config/ai-usage-watch/config.json`:
+
+```json
+{
+  "provider": "claude-ai"
+}
+```
+
+`chromiumPath` is still required (or auto-detected from standard paths — see below).
+
+### Chromium auto-detection
+
+`chromiumPath` is optional when your browser is installed in one of these locations:
 
 - `/usr/bin/chromium`
 - `/usr/bin/chromium-browser`
@@ -77,41 +109,42 @@ If you prefer JSON config, create `~/.config/ai-usage-watch/config.json`:
 ## Usage
 
 ```bash
+# Default provider (opencode-go unless configured otherwise)
 ai-usage-watch
+
+# Specific provider
+ai-usage-watch --provider claude-ai
+ai-usage-watch --provider opencode-go
+
+# JSON output (disables desktop notifications)
+ai-usage-watch --json
+ai-usage-watch --provider claude-ai --json
+
+# Override config for one run
+ai-usage-watch --provider opencode-go --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
 ```
 
-From the project directory, this also works and builds TypeScript first:
+From the project directory, this builds TypeScript first and runs it:
 
 ```bash
 npm run start
 ```
 
-JSON output disables desktop notifications by default:
-
-```bash
-ai-usage-watch --json
-```
-
-Override config for one run:
-
-```bash
-ai-usage-watch --provider opencode-go --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
-```
-
-Current provider support:
+## Provider Support
 
 | Provider | Status | Notes |
-|----------|--------|-------|
-| `opencode-go` | Supported | Uses the existing OpenCode Go browser session and workspace usage page. |
-| `claude-code` | Unsupported placeholder | Personal subscription usage does not currently have a public usage API. The project intentionally does not scrape `claude.ai`. |
-| `codex` | Unsupported placeholder | Personal subscription usage does not currently have a public usage API. The project intentionally does not scrape `chatgpt.com`. |
+|---|---|---|
+| `opencode-go` | ✅ Supported | Browser scrape of `opencode.ai/workspace/<id>/go`. Requires workspace ID. |
+| `claude-ai` | ✅ Supported | Browser scrape of `claude.ai/settings/usage`. Shows session and weekly limits. |
+| `claude-code` | ⏳ Placeholder | No public usage API available. |
+| `codex` | ⏳ Placeholder | No public usage API available. |
 
 ## CLI Flags
 
 | Flag | Description |
-|------|-------------|
-| `--provider <id>` | Usage provider. Defaults to `opencode-go`. |
-| `--workspace <id>` | OpenCode workspace ID. |
+|---|---|
+| `--provider <id>` | Usage provider: `opencode-go`, `claude-ai`. Defaults to `opencode-go`. |
+| `--workspace <id>` | OpenCode workspace ID (required for `opencode-go`). |
 | `--chromium <path>` | Chromium-compatible browser executable path. |
 | `--no-notify` | Disable desktop notifications. |
 | `--json` | Print machine-readable JSON and disable notifications. |
@@ -121,49 +154,61 @@ Current provider support:
 ## Environment Variables
 
 | Variable | Description |
-|----------|-------------|
-| `AI_USAGE_WATCH_PROVIDER` | Usage provider: `opencode-go`, `claude-code`, or `codex`. |
-| `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID. |
+|---|---|
+| `AI_USAGE_WATCH_PROVIDER` | Usage provider: `opencode-go` or `claude-ai`. |
+| `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID (required for `opencode-go`). |
 | `CHROMIUM_PATH` | Chromium-compatible browser executable path. |
 | `AI_USAGE_WATCH_CONFIG` | Optional config file path override. |
 | `AI_USAGE_WATCH_ENV` | Optional `.env` file path override. Defaults to `~/.config/ai-usage-watch/.env`. |
 
-Configuration precedence is:
+Configuration precedence:
 
-```text
+```
 CLI flags > shell environment variables > .env files > config file > defaults
 ```
 
 The app reads `.env` from:
 
 1. `~/.config/ai-usage-watch/.env` or the path in `AI_USAGE_WATCH_ENV`
-2. the package/project `.env`, useful for `npm run start` during local development
-
-When using the default global env file, the package/project `.env` can override it for local development. When `AI_USAGE_WATCH_ENV` is set explicitly, that file overrides the package/project `.env`.
+2. The package/project `.env` (useful for `npm run start` during local development)
 
 ## Hyprland Binding
 
-Add a binding that runs the package command:
+To run both providers in parallel on a single keypress (each sends its own notification):
 
 ```lua
-hl.bind("ALT + apostrophe", hl.dsp.exec_cmd("ai-usage-watch"), { description = "Show AI usage" })
+hl.bind("ALT + apostrophe", hl.dsp.exec_cmd("bash -c 'ai-usage-watch & ai-usage-watch --provider claude-ai &'"), { description = "Show AI usage (all providers)" })
 ```
 
-If you use plain Hyprland config instead of Omarchy Lua bindings:
+If you use full paths (required when Hyprland's PATH differs from your shell):
+
+```lua
+hl.bind("ALT + apostrophe", hl.dsp.exec_cmd("bash -c '/usr/local/bin/ai-usage-watch & /usr/local/bin/ai-usage-watch --provider claude-ai &'"), { description = "Show AI usage (all providers)" })
+```
+
+For a single provider in plain Hyprland config:
 
 ```ini
-bind = ALT, apostrophe, exec, ai-usage-watch
+bind = ALT, apostrophe, exec, ai-usage-watch --provider claude-ai
 ```
 
-## How OpenCode Go Works
+## How It Works
 
-The current supported provider is `opencode-go`:
+### OpenCode Go
 
-1. Reuses a persistent browser profile from `~/.config/ai-usage-watch/browser-profile` when available.
-2. Opens an interactive browser login flow if the saved session is missing or expired.
-3. Saves the session state to `~/.config/ai-usage-watch/session.json` after a successful login.
-4. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts usage values.
-5. Prints terminal output, JSON output, or a desktop notification depending on flags.
+1. Reuses a persistent browser profile from `~/.config/ai-usage-watch/browser-profile/`.
+2. Opens an interactive browser login flow if the session is missing or expired.
+3. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts rolling, weekly, and monthly usage values.
+4. Prints terminal output, JSON, or a desktop notification depending on flags.
+
+### Claude.ai
+
+1. Reuses a persistent browser profile from `~/.config/ai-usage-watch/browser-profile-claude-ai/` (isolated from the OpenCode Go profile).
+2. Opens an interactive browser login flow if the session is missing or expired.
+3. Visits `https://claude.ai/settings/usage` and extracts current session and weekly usage percentages.
+4. Prints terminal output, JSON, or a desktop notification depending on flags.
+
+Usage values from Claude.ai are percentages (0–100). There is no public API for absolute token or dollar limits, so values are shown as `<pct> / 100`.
 
 ## Development
 
@@ -175,50 +220,76 @@ npm test
 npm run typecheck
 ```
 
-The code is split by responsibility:
+Code structure:
 
-- `src/cli.ts` parses CLI flags and help output.
-- `src/config.ts` resolves CLI/env/config precedence.
-- `src/providers.ts` selects a usage provider and contains current provider capabilities.
-- `src/browser.ts` owns Playwright login and usage-page navigation.
-- `src/usage-parser.ts` parses usage values from page text/HTML.
-- `src/notifier.ts` owns desktop notifications.
-- `src/app.ts` orchestrates the use case.
+| File | Responsibility |
+|---|---|
+| `src/cli.ts` | CLI flag parsing and help output |
+| `src/config.ts` | Resolves CLI / env / config file precedence |
+| `src/providers.ts` | Provider registry and dispatch |
+| `src/providers/claude-ai.ts` | Claude.ai provider (Playwright) |
+| `src/parsers/claude-ai-parser.ts` | Claude.ai page text parser |
+| `src/browser.ts` | OpenCode Go Playwright helpers |
+| `src/usage-parser.ts` | OpenCode Go page parser |
+| `src/notifier.ts` | Desktop notifications |
+| `src/app.ts` | Use-case orchestration |
+| `src/paths.ts` | All file system paths |
 
 ## Troubleshooting
 
 **Browser not found**
 
-Install Chromium or set one of these:
+Install Chromium or set the path explicitly:
 
 ```bash
 ai-usage-watch --chromium /path/to/browser
 CHROMIUM_PATH=/path/to/browser ai-usage-watch
 ```
 
-**Not authenticated in the browser**
+**Not authenticated (OpenCode Go)**
 
-Run `ai-usage-watch` without `--json`, complete the browser login, and try again.
-The browser session is saved in `~/.config/ai-usage-watch/browser-profile` after login.
+Run without `--json` to trigger the interactive login flow:
+
+```bash
+ai-usage-watch --provider opencode-go
+```
+
+The browser session is saved in `~/.config/ai-usage-watch/browser-profile/` after login.
 
 To force a fresh login:
 
 ```bash
-rm ~/.config/ai-usage-watch/session.json
 rm -rf ~/.config/ai-usage-watch/browser-profile
-ai-usage-watch
+ai-usage-watch --provider opencode-go
+```
+
+**Not authenticated (Claude.ai)**
+
+Run without `--json` to trigger the interactive login flow:
+
+```bash
+ai-usage-watch --provider claude-ai
+```
+
+The browser session is saved in `~/.config/ai-usage-watch/browser-profile-claude-ai/` after login.
+
+To force a fresh login:
+
+```bash
+rm -rf ~/.config/ai-usage-watch/browser-profile-claude-ai
+ai-usage-watch --provider claude-ai
 ```
 
 **Usage not found**
 
-Run with debug enabled:
+Run with debug to inspect the page HTML:
 
 ```bash
-ai-usage-watch --debug
+ai-usage-watch --provider claude-ai --debug
 ```
 
-If extraction fails after the page loads, debug HTML is saved to `~/.config/ai-usage-watch/debug.html`.
-This file can contain private account or workspace details. Do not share it publicly or commit it.
+If extraction fails, the page HTML is saved to `~/.config/ai-usage-watch/debug.html`.
+This file may contain private account details — do not share it publicly or commit it.
 
 ## License
 

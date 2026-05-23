@@ -1,4 +1,4 @@
-export type ProviderId = 'opencode-go' | 'claude-code' | 'codex';
+export type ProviderId = 'opencode-go' | 'claude-code' | 'codex' | 'claude-ai';
 
 export interface CliConfigOverrides {
   providerId?: ProviderId;

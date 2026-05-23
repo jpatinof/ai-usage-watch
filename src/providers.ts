@@ -1,8 +1,9 @@
 import { extractUsageFromWorkspace, launchPersistentContext, runInteractiveLogin, saveDebugHtml } from './browser.js';
+import { claudeAiProvider } from './providers/claude-ai.js';
 import type { AppConfig, ProviderId, UsageProvider, UsageResult } from './types.js';
 
 export const DEFAULT_PROVIDER_ID: ProviderId = 'opencode-go';
-export const PROVIDER_IDS = ['opencode-go', 'claude-code', 'codex'] as const satisfies readonly ProviderId[];
+export const PROVIDER_IDS = ['opencode-go', 'claude-code', 'codex', 'claude-ai'] as const satisfies readonly ProviderId[];
 
 const openCodeGoProvider: UsageProvider = {
   metadata: {
@@ -69,6 +70,7 @@ const providers: Record<ProviderId, UsageProvider> = {
   'opencode-go': openCodeGoProvider,
   'claude-code': unsupportedProvider('claude-code', 'Claude Code'),
   codex: unsupportedProvider('codex', 'Codex'),
+  'claude-ai': claudeAiProvider,
 };
 
 export function isProviderId(value: string): value is ProviderId {
