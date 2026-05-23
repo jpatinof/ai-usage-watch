@@ -3,10 +3,10 @@ import { isProviderId, PROVIDER_IDS } from './providers.js';
 import type { ParsedArgs } from './types.js';
 
 export function printHelp(): void {
-  console.log(`OpenCode Go Usage Checker
+  console.log(`AI Usage Watch
 
 Usage:
-  opencode-go-usage [options]
+  ai-usage-watch [options]
 
 Options:
   --provider <id>    Usage provider. Defaults to opencode-go.
@@ -21,14 +21,14 @@ Configuration precedence:
   CLI flags > environment variables > .env files > config file > defaults
 
 Environment variables:
-  OPENCODE_GO_PROVIDER  Usage provider: opencode-go, claude-code, or codex.
+  AI_USAGE_WATCH_PROVIDER  Usage provider: opencode-go, claude-code, or codex.
   OPENCODE_WORKSPACE_ID  OpenCode workspace ID.
   CHROMIUM_PATH          Chromium-compatible browser executable path.
-  OPENCODE_GO_CONFIG     Optional config file path. Defaults to ~/.config/opencode-go/config.json.
-  OPENCODE_GO_ENV        Optional .env file path. Defaults to ~/.config/opencode-go/.env.
+  AI_USAGE_WATCH_CONFIG     Optional config file path. Defaults to ~/.config/ai-usage-watch/config.json.
+  AI_USAGE_WATCH_ENV        Optional .env file path. Defaults to ~/.config/ai-usage-watch/.env.
 
 .env example (${DEFAULT_ENV_FILE}):
-  OPENCODE_GO_PROVIDER=opencode-go
+  AI_USAGE_WATCH_PROVIDER=opencode-go
   OPENCODE_WORKSPACE_ID=wrk_your_workspace_id
   CHROMIUM_PATH=/usr/bin/chromium
 
@@ -41,7 +41,7 @@ Config file example (${DEFAULT_CONFIG_FILE}):
   }
 
 Required:
-  Configure a workspace ID before running the OpenCode Go checker.`);
+  Configure a workspace ID before running the AI Usage Watch.`);
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {

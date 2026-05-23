@@ -1,10 +1,10 @@
 {
-  "name": "opencode-go-usage",
+  "name": "ai-usage-watch",
   "version": "1.0.0",
-  "description": "Check OpenCode Go subscription usage from the terminal",
+  "description": "Monitor AI subscription usage from the terminal",
   "type": "module",
   "bin": {
-    "opencode-go-usage": "./dist/index.js"
+    "ai-usage-watch": "./dist/index.js"
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
@@ -25,10 +25,11 @@
     "node": ">=18"
   },
   "keywords": [
-    "opencode",
-    "go",
+    "ai",
     "usage",
-    "subscription"
+    "subscription",
+    "opencode",
+    "monitor"
   ],
   "license": "MIT"
 }

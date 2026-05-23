@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 const sourceDir = dirname(fileURLToPath(import.meta.url));
 
 export const PROJECT_DIR = resolve(sourceDir, '..');
-export const SESSION_DIR = `${homedir()}/.config/opencode-go`;
+export const AUTH_FILE = `${homedir()}/.local/share/opencode/auth.json`;
+export const SESSION_DIR = `${homedir()}/.config/ai-usage-watch`;
+export const SESSION_FILE = `${SESSION_DIR}/session.json`;
 export const PROFILE_DIR = `${SESSION_DIR}/browser-profile`;
 export const DEFAULT_CONFIG_FILE = `${SESSION_DIR}/config.json`;
 export const DEFAULT_ENV_FILE = `${SESSION_DIR}/.env`;

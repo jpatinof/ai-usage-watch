@@ -1,6 +1,6 @@
-# OpenCode Go Usage Checker
+# AI Usage Watch
 
-Check your OpenCode Go subscription usage from the terminal, optionally with a desktop notification for Hyprland or any Linux desktop that supports `notify-send`.
+Monitor your AI subscription usage from the terminal, optionally with a desktop notification for Hyprland or any Linux desktop that supports `notify-send`.
 
 The project now has a small provider seam so more usage sources can be added later. Today, only OpenCode Go is supported.
 
@@ -11,13 +11,13 @@ The project now has a small provider seam so more usage sources can be added lat
 
 - Node.js 18+
 - Chromium, Chromium Browser, Google Chrome, or Brave
-- OpenCode Go subscription and workspace ID
+- An OpenCode Go subscription and workspace ID
 
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USER/opencode-go-usage.git
-cd opencode-go-usage
+git clone https://github.com/jpatinof/ai-usage-watch.git
+cd ai-usage-watch
 npm install
 npm run build
 npm link
@@ -26,7 +26,7 @@ npm link
 After `npm link`, the command is available as:
 
 ```bash
-opencode-go-usage --help
+ai-usage-watch --help
 ```
 
 You can also run it without linking:
@@ -44,14 +44,14 @@ cp .env.example .env
 ```
 
 ```env
-OPENCODE_GO_PROVIDER=opencode-go
+AI_USAGE_WATCH_PROVIDER=opencode-go
 OPENCODE_WORKSPACE_ID=wrk_your_workspace_id
 CHROMIUM_PATH=/usr/bin/chromium
 ```
 
-For an installed/global setup, you can also create `~/.config/opencode-go/.env` with the same variables. This works no matter where you run `opencode-go-usage` from.
+For an installed/global setup, you can also create `~/.config/ai-usage-watch/.env` with the same variables. This works no matter where you run `ai-usage-watch` from.
 
-If you prefer JSON config, create `~/.config/opencode-go/config.json`:
+If you prefer JSON config, create `~/.config/ai-usage-watch/config.json`:
 
 ```json
 {
@@ -77,7 +77,7 @@ If you prefer JSON config, create `~/.config/opencode-go/config.json`:
 ## Usage
 
 ```bash
-opencode-go-usage
+ai-usage-watch
 ```
 
 From the project directory, this also works and builds TypeScript first:
@@ -89,13 +89,13 @@ npm run start
 JSON output disables desktop notifications by default:
 
 ```bash
-opencode-go-usage --json
+ai-usage-watch --json
 ```
 
 Override config for one run:
 
 ```bash
-opencode-go-usage --provider opencode-go --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
+ai-usage-watch --provider opencode-go --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
 ```
 
 Current provider support:
@@ -115,18 +115,18 @@ Current provider support:
 | `--chromium <path>` | Chromium-compatible browser executable path. |
 | `--no-notify` | Disable desktop notifications. |
 | `--json` | Print machine-readable JSON and disable notifications. |
-| `--debug` | Print config resolution and save failed page HTML to `~/.config/opencode-go/debug.html`. |
+| `--debug` | Print config resolution and save failed page HTML to `~/.config/ai-usage-watch/debug.html`. |
 | `--help` | Show usage help. |
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `OPENCODE_GO_PROVIDER` | Usage provider: `opencode-go`, `claude-code`, or `codex`. |
+| `AI_USAGE_WATCH_PROVIDER` | Usage provider: `opencode-go`, `claude-code`, or `codex`. |
 | `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID. |
 | `CHROMIUM_PATH` | Chromium-compatible browser executable path. |
-| `OPENCODE_GO_CONFIG` | Optional config file path override. |
-| `OPENCODE_GO_ENV` | Optional `.env` file path override. Defaults to `~/.config/opencode-go/.env`. |
+| `AI_USAGE_WATCH_CONFIG` | Optional config file path override. |
+| `AI_USAGE_WATCH_ENV` | Optional `.env` file path override. Defaults to `~/.config/ai-usage-watch/.env`. |
 
 Configuration precedence is:
 
@@ -136,33 +136,34 @@ CLI flags > shell environment variables > .env files > config file > defaults
 
 The app reads `.env` from:
 
-1. `~/.config/opencode-go/.env` or the path in `OPENCODE_GO_ENV`
+1. `~/.config/ai-usage-watch/.env` or the path in `AI_USAGE_WATCH_ENV`
 2. the package/project `.env`, useful for `npm run start` during local development
 
-When using the default global env file, the package/project `.env` can override it for local development. When `OPENCODE_GO_ENV` is set explicitly, that file overrides the package/project `.env`.
+When using the default global env file, the package/project `.env` can override it for local development. When `AI_USAGE_WATCH_ENV` is set explicitly, that file overrides the package/project `.env`.
 
 ## Hyprland Binding
 
 Add a binding that runs the package command:
 
 ```lua
-hl.bind("ALT + apostrophe", hl.dsp.exec_cmd("opencode-go-usage"), { description = "Show OpenCode Go usage" })
+hl.bind("ALT + apostrophe", hl.dsp.exec_cmd("ai-usage-watch"), { description = "Show AI usage" })
 ```
 
 If you use plain Hyprland config instead of Omarchy Lua bindings:
 
 ```ini
-bind = ALT, apostrophe, exec, opencode-go-usage
+bind = ALT, apostrophe, exec, ai-usage-watch
 ```
 
 ## How OpenCode Go Works
 
 The current supported provider is `opencode-go`:
 
-1. Reuses a persistent browser profile from `~/.config/opencode-go/browser-profile` when available.
-2. Opens a browser login flow if the saved OpenCode web session is missing.
-3. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts usage values.
-4. Prints terminal output, JSON output, or a desktop notification depending on flags.
+1. Reuses a persistent browser profile from `~/.config/ai-usage-watch/browser-profile` when available.
+2. Opens an interactive browser login flow if the saved session is missing or expired.
+3. Saves the session state to `~/.config/ai-usage-watch/session.json` after a successful login.
+4. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts usage values.
+5. Prints terminal output, JSON output, or a desktop notification depending on flags.
 
 ## Development
 
@@ -191,20 +192,21 @@ The code is split by responsibility:
 Install Chromium or set one of these:
 
 ```bash
-opencode-go-usage --chromium /path/to/browser
-CHROMIUM_PATH=/path/to/browser opencode-go-usage
+ai-usage-watch --chromium /path/to/browser
+CHROMIUM_PATH=/path/to/browser ai-usage-watch
 ```
 
 **Not authenticated in the browser**
 
-Run `opencode-go-usage` without `--json`, complete the browser login, and try again.
-The browser session is saved in `~/.config/opencode-go/browser-profile` after login.
+Run `ai-usage-watch` without `--json`, complete the browser login, and try again.
+The browser session is saved in `~/.config/ai-usage-watch/browser-profile` after login.
 
 To force a fresh login:
 
 ```bash
-rm -rf ~/.config/opencode-go/browser-profile
-opencode-go-usage
+rm ~/.config/ai-usage-watch/session.json
+rm -rf ~/.config/ai-usage-watch/browser-profile
+ai-usage-watch
 ```
 
 **Usage not found**
@@ -212,10 +214,10 @@ opencode-go-usage
 Run with debug enabled:
 
 ```bash
-opencode-go-usage --debug
+ai-usage-watch --debug
 ```
 
-If extraction fails after the page loads, debug HTML is saved to `~/.config/opencode-go/debug.html`.
+If extraction fails after the page loads, debug HTML is saved to `~/.config/ai-usage-watch/debug.html`.
 This file can contain private account or workspace details. Do not share it publicly or commit it.
 
 ## License

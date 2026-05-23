@@ -56,8 +56,8 @@ export function resolveEnvSources(
 ): EnvSources {
   const defaultEnvFile = options.defaultEnvFile ?? DEFAULT_ENV_FILE;
   const localEnvFile = options.localEnvFile ?? LOCAL_ENV_FILE;
-  const configuredEnvPath = env.OPENCODE_GO_ENV || defaultEnvFile;
-  const hasExplicitEnvPath = Boolean(env.OPENCODE_GO_ENV);
+const configuredEnvPath = env.AI_USAGE_WATCH_ENV || defaultEnvFile;
+const hasExplicitEnvPath = Boolean(env.AI_USAGE_WATCH_ENV);
   const localEnv = readEnvFile(localEnvFile);
   const userEnv = configuredEnvPath === localEnvFile ? {} : readEnvFile(configuredEnvPath);
 

@@ -84,10 +84,10 @@ export function resolveConfig(
   const chromiumCandidates = options.chromiumCandidates ?? CHROMIUM_CANDIDATES;
   const envSources = resolveEnvSources(env, { defaultEnvFile, localEnvFile });
   const mergedEnv = envSources.values;
-  const configPath = mergedEnv.OPENCODE_GO_CONFIG || defaultConfigFile;
+  const configPath = mergedEnv.AI_USAGE_WATCH_CONFIG || defaultConfigFile;
   const fileConfig = readConfigFile(configPath);
   const envConfig = {
-    providerId: mergedEnv.OPENCODE_GO_PROVIDER,
+    providerId: mergedEnv.AI_USAGE_WATCH_PROVIDER,
     workspaceId: mergedEnv.OPENCODE_WORKSPACE_ID,
     chromiumPath: mergedEnv.CHROMIUM_PATH,
   };
