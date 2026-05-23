@@ -11,7 +11,6 @@ The project now has a small provider seam so more usage sources can be added lat
 
 - Node.js 18+
 - Chromium, Chromium Browser, Google Chrome, or Brave
-- OpenCode credentials created by running `/connect` in OpenCode
 - OpenCode Go subscription and workspace ID
 
 ## Installation
@@ -140,6 +139,8 @@ The app reads `.env` from:
 1. `~/.config/opencode-go/.env` or the path in `OPENCODE_GO_ENV`
 2. the package/project `.env`, useful for `npm run start` during local development
 
+When using the default global env file, the package/project `.env` can override it for local development. When `OPENCODE_GO_ENV` is set explicitly, that file overrides the package/project `.env`.
+
 ## Hyprland Binding
 
 Add a binding that runs the package command:
@@ -158,11 +159,10 @@ bind = ALT, apostrophe, exec, opencode-go-usage
 
 The current supported provider is `opencode-go`:
 
-1. Reads OpenCode credentials from `~/.local/share/opencode/auth.json`.
-2. Reuses a persistent browser profile from `~/.config/opencode-go/browser-profile` when available.
-3. Opens a browser login flow if the saved OpenCode web session is missing.
-4. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts usage values.
-5. Prints terminal output, JSON output, or a desktop notification depending on flags.
+1. Reuses a persistent browser profile from `~/.config/opencode-go/browser-profile` when available.
+2. Opens a browser login flow if the saved OpenCode web session is missing.
+3. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts usage values.
+4. Prints terminal output, JSON output, or a desktop notification depending on flags.
 
 ## Development
 
@@ -186,10 +186,6 @@ The code is split by responsibility:
 
 ## Troubleshooting
 
-**No OpenCode credentials found**
-
-Run `/connect` inside OpenCode first. The script expects credentials at `~/.local/share/opencode/auth.json`.
-
 **Browser not found**
 
 Install Chromium or set one of these:
@@ -207,7 +203,6 @@ The browser session is saved in `~/.config/opencode-go/browser-profile` after lo
 To force a fresh login:
 
 ```bash
-rm ~/.config/opencode-go/session.json
 rm -rf ~/.config/opencode-go/browser-profile
 opencode-go-usage
 ```
@@ -221,6 +216,7 @@ opencode-go-usage --debug
 ```
 
 If extraction fails after the page loads, debug HTML is saved to `~/.config/opencode-go/debug.html`.
+This file can contain private account or workspace details. Do not share it publicly or commit it.
 
 ## License
 

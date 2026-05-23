@@ -57,15 +57,14 @@ export function resolveEnvSources(
   const defaultEnvFile = options.defaultEnvFile ?? DEFAULT_ENV_FILE;
   const localEnvFile = options.localEnvFile ?? LOCAL_ENV_FILE;
   const configuredEnvPath = env.OPENCODE_GO_ENV || defaultEnvFile;
+  const hasExplicitEnvPath = Boolean(env.OPENCODE_GO_ENV);
   const localEnv = readEnvFile(localEnvFile);
   const userEnv = configuredEnvPath === localEnvFile ? {} : readEnvFile(configuredEnvPath);
 
   return {
-    values: {
-      ...userEnv,
-      ...localEnv,
-      ...env,
-    },
+    values: hasExplicitEnvPath
+      ? { ...localEnv, ...userEnv, ...env }
+      : { ...userEnv, ...localEnv, ...env },
     loadedFiles: [configuredEnvPath, localEnvFile].filter(path => existsSync(path)),
   };
 }

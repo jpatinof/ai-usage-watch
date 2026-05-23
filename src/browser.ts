@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, type BrowserContext, type Page } from 'playwright';
-import { DEBUG_FILE, PROFILE_DIR, SESSION_DIR, SESSION_FILE } from './paths.js';
+import { DEBUG_FILE, PROFILE_DIR, SESSION_DIR } from './paths.js';
 import { extractUsages } from './usage-parser.js';
 import type { AppConfig, UsageResult } from './types.js';
 
@@ -121,9 +121,7 @@ export async function runInteractiveLogin(config: AppConfig): Promise<UsageResul
 
     const usages = await extractUsageFromWorkspace(config, loginPage);
 
-    await loginContext.storageState({ path: SESSION_FILE });
-    chmodPrivate(SESSION_FILE);
-    console.log(`  Saved browser session to ${SESSION_FILE}`);
+    console.log(`  Saved browser session to ${PROFILE_DIR}`);
     return usages;
   } catch (error) {
     const message = error instanceof Error ? error.message.split('\n')[0] : String(error);

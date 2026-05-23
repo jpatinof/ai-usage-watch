@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from '../dist/cli.js';
 import { resolveConfig } from '../dist/config.js';
-import { parseDotEnvValue, readEnvFile } from '../dist/env.js';
+import { parseDotEnvValue, readEnvFile, resolveEnvSources } from '../dist/env.js';
 
 function fixturePaths() {
   const dir = mkdtempSync(join(tmpdir(), 'opencode-go-usage-'));
@@ -35,6 +35,33 @@ test('readEnvFile supports comments and export syntax', () => {
 
   assert.equal(env.OPENCODE_WORKSPACE_ID, 'wrk_env');
   assert.equal(env.CHROMIUM_PATH, '/bin/chromium');
+});
+
+test('resolveEnvSources lets local .env override the default user .env', () => {
+  const { dir } = fixturePaths();
+  const defaultEnvFile = join(dir, 'default.env');
+  const localEnvFile = join(dir, 'local.env');
+  writeFileSync(defaultEnvFile, 'OPENCODE_WORKSPACE_ID=wrk_default\n');
+  writeFileSync(localEnvFile, 'OPENCODE_WORKSPACE_ID=wrk_local\n');
+
+  const sources = resolveEnvSources({}, { defaultEnvFile, localEnvFile });
+
+  assert.equal(sources.values.OPENCODE_WORKSPACE_ID, 'wrk_local');
+});
+
+test('resolveEnvSources lets explicit OPENCODE_GO_ENV override local .env', () => {
+  const { dir } = fixturePaths();
+  const explicitEnvFile = join(dir, 'explicit.env');
+  const localEnvFile = join(dir, 'local.env');
+  writeFileSync(explicitEnvFile, 'OPENCODE_WORKSPACE_ID=wrk_explicit\n');
+  writeFileSync(localEnvFile, 'OPENCODE_WORKSPACE_ID=wrk_local\n');
+
+  const sources = resolveEnvSources({ OPENCODE_GO_ENV: explicitEnvFile }, {
+    defaultEnvFile: join(dir, 'missing.env'),
+    localEnvFile,
+  });
+
+  assert.equal(sources.values.OPENCODE_WORKSPACE_ID, 'wrk_explicit');
 });
 
 test('resolveConfig uses CLI over env over config', () => {
