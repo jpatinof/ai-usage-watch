@@ -18,6 +18,7 @@ Check your OpenCode Go subscription usage from the terminal, optionally with a d
 git clone https://github.com/YOUR_USER/opencode-go-usage.git
 cd opencode-go-usage
 npm install
+npm run build
 npm link
 ```
 
@@ -30,12 +31,25 @@ opencode-go-usage --help
 You can also run it without linking:
 
 ```bash
-node src/index.js --help
+npm run help
 ```
 
 ## Configuration
 
-Create `~/.config/opencode-go/config.json`:
+The fastest local setup is a `.env` file. Copy the example and edit your workspace ID:
+
+```bash
+cp .env.example .env
+```
+
+```env
+OPENCODE_WORKSPACE_ID=wrk_your_workspace_id
+CHROMIUM_PATH=/usr/bin/chromium
+```
+
+For an installed/global setup, you can also create `~/.config/opencode-go/.env` with the same variables. This works no matter where you run `opencode-go-usage` from.
+
+If you prefer JSON config, create `~/.config/opencode-go/config.json`:
 
 ```json
 {
@@ -45,7 +59,7 @@ Create `~/.config/opencode-go/config.json`:
 }
 ```
 
-`workspaceId` is strongly recommended. If it is not configured, the script keeps the previous hardcoded workspace ID as a backward-compatible fallback, which may be wrong for your account.
+`workspaceId` is required. Without it, the checker stops instead of querying the wrong workspace.
 
 `chromiumPath` is optional when your browser is installed in one of these paths:
 
@@ -59,6 +73,12 @@ Create `~/.config/opencode-go/config.json`:
 
 ```bash
 opencode-go-usage
+```
+
+From the project directory, this also works and builds TypeScript first:
+
+```bash
+npm run start
 ```
 
 JSON output disables desktop notifications by default:
@@ -91,12 +111,18 @@ opencode-go-usage --workspace wrk_your_workspace_id --chromium /usr/bin/brave-br
 | `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID. |
 | `CHROMIUM_PATH` | Chromium-compatible browser executable path. |
 | `OPENCODE_GO_CONFIG` | Optional config file path override. |
+| `OPENCODE_GO_ENV` | Optional `.env` file path override. Defaults to `~/.config/opencode-go/.env`. |
 
 Configuration precedence is:
 
 ```text
-CLI flags > environment variables > config file > defaults
+CLI flags > shell environment variables > .env files > config file > defaults
 ```
+
+The app reads `.env` from:
+
+1. `~/.config/opencode-go/.env` or the path in `OPENCODE_GO_ENV`
+2. the package/project `.env`, useful for `npm run start` during local development
 
 ## Hyprland Binding
 
@@ -115,10 +141,29 @@ bind = ALT, apostrophe, exec, opencode-go-usage
 ## How It Works
 
 1. Reads OpenCode credentials from `~/.local/share/opencode/auth.json`.
-2. Reuses browser cookies from `~/.config/opencode-go/session.json` when available.
+2. Reuses a persistent browser profile from `~/.config/opencode-go/browser-profile` when available.
 3. Opens a browser login flow if the saved OpenCode web session is missing.
 4. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts usage values.
 5. Prints terminal output, JSON output, or a desktop notification depending on flags.
+
+## Development
+
+The app is written in TypeScript and compiled to `dist/`.
+
+```bash
+npm run build
+npm test
+npm run typecheck
+```
+
+The code is split by responsibility:
+
+- `src/cli.ts` parses CLI flags and help output.
+- `src/config.ts` resolves CLI/env/config precedence.
+- `src/browser.ts` owns Playwright login and usage-page navigation.
+- `src/usage-parser.ts` parses usage values from page text/HTML.
+- `src/notifier.ts` owns desktop notifications.
+- `src/app.ts` orchestrates the use case.
 
 ## Troubleshooting
 
@@ -138,6 +183,15 @@ CHROMIUM_PATH=/path/to/browser opencode-go-usage
 **Not authenticated in the browser**
 
 Run `opencode-go-usage` without `--json`, complete the browser login, and try again.
+The browser session is saved in `~/.config/opencode-go/browser-profile` after login.
+
+To force a fresh login:
+
+```bash
+rm ~/.config/opencode-go/session.json
+rm -rf ~/.config/opencode-go/browser-profile
+opencode-go-usage
+```
 
 **Usage not found**
 

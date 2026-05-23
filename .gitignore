@@ -1,4 +1,6 @@
 node_modules/
+dist/
+*.tsbuildinfo
 
 # Local AI/tooling metadata
 .atl/
@@ -6,6 +8,7 @@ node_modules/
 # Local runtime state
 .env
 .env.*
+!.env.example
 *.log
 
 # OS/editor files

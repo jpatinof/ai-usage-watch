@@ -4,18 +4,30 @@
   "description": "Check OpenCode Go subscription usage from the terminal",
   "type": "module",
   "bin": {
-    "opencode-go-usage": "./src/index.js"
+    "opencode-go-usage": "./dist/index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "help": "node src/index.js --help"
+    "build": "tsc",
+    "start": "tsc && node dist/index.js",
+    "help": "tsc && node dist/index.js --help",
+    "test": "tsc && node --test tests/*.test.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "playwright": "^1.60.0"
   },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^6.0.3"
+  },
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["opencode", "go", "usage", "subscription"],
+  "keywords": [
+    "opencode",
+    "go",
+    "usage",
+    "subscription"
+  ],
   "license": "MIT"
 }
