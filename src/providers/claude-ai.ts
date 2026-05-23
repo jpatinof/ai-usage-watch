@@ -81,13 +81,13 @@ async function runClaudeAiInteractiveLogin(config: AppConfig): Promise<UsageResu
 export const claudeAiProvider: UsageProvider = {
   metadata: {
     id: 'claude-ai',
-    displayName: 'Claude.ai',
+    displayName: 'Anthropic',
     supported: true,
-    startTitle: '🤖 Claude.ai',
+    startTitle: '🤖 Anthropic',
     startMessage: '🔍 Checking your plan usage...',
-    checkingMessage: '🔍 Checking your Claude.ai plan usage...',
-    successTitle: '🤖 Claude.ai Usage',
-    errorTitle: 'Claude.ai',
+    checkingMessage: '🔍 Checking your Anthropic plan usage...',
+    successTitle: '🤖 Anthropic Usage',
+    errorTitle: 'Anthropic',
     errorMessage: '⚠️ Error while checking usage',
   },
   async getUsage(config: AppConfig): Promise<UsageResult[]> {
