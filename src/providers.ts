@@ -1,4 +1,4 @@
-import { extractUsageFromWorkspace, launchPersistentContext, looksUnauthenticated, runInteractiveLogin, saveDebugHtml } from './browser.js';
+import { extractUsageFromWorkspace, launchPersistentContext, runInteractiveLogin, saveDebugHtml } from './browser.js';
 import type { AppConfig, ProviderId, UsageProvider, UsageResult } from './types.js';
 
 export const DEFAULT_PROVIDER_ID: ProviderId = 'opencode-go';
@@ -9,12 +9,12 @@ const openCodeGoProvider: UsageProvider = {
     id: 'opencode-go',
     displayName: 'OpenCode Go',
     supported: true,
-    startTitle: 'OpenCode Go',
-    startMessage: 'Checking your usage...',
-    checkingMessage: 'Checking your OpenCode Go stats...',
-    successTitle: 'OpenCode Go Usage',
+    startTitle: '🔋 OpenCode Go',
+    startMessage: '🔍 Checking your usage...',
+    checkingMessage: '🔍 Checking your OpenCode Go stats...',
+    successTitle: '🔋 OpenCode Go Usage',
     errorTitle: 'OpenCode Go',
-    errorMessage: 'Error while checking usage',
+    errorMessage: '⚠️ Error while checking usage',
   },
   async getUsage(config: AppConfig): Promise<UsageResult[]> {
     let context;
@@ -24,17 +24,18 @@ const openCodeGoProvider: UsageProvider = {
       context = await launchPersistentContext(config, true);
       page = await context.newPage();
 
-      await page.goto('https://opencode.ai', { waitUntil: 'domcontentloaded', timeout: 15000 });
-
-      if (await looksUnauthenticated(page)) {
-        if (config.json) throw new Error('OpenCode session is not authenticated. Run without --json to complete browser login.');
-
-        await context.close();
-        context = undefined;
-        return runInteractiveLogin(config);
+      try {
+        return await extractUsageFromWorkspace(config, page);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes('not authenticated') || msg.includes('still not authenticated')) {
+          if (config.json) throw new Error('OpenCode session is not authenticated. Run without --json to complete browser login.');
+          await context.close();
+          context = undefined;
+          return runInteractiveLogin(config);
+        }
+        throw error;
       }
-
-      return extractUsageFromWorkspace(config, page);
     } catch (error) {
       const message = error instanceof Error ? error.message.split('\n')[0] : String(error);
       await saveDebugHtml(config, page, message);

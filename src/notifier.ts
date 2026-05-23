@@ -9,7 +9,7 @@ export function notify(title: string, body: string): void {
   }
 }
 
-export function notifyStart(enabled: boolean, title = 'OpenCode Go', body = 'Checking your usage...'): void {
+export function notifyStart(enabled: boolean, title = '🔋 OpenCode Go', body = '🔍 Checking your usage...'): void {
   if (!enabled) return;
 
   try {

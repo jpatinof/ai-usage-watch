@@ -83,7 +83,7 @@ export async function launchPersistentContext(config: AppConfig, headless: boole
   return chromium.launchPersistentContext(PROFILE_DIR, {
     headless,
     executablePath: config.chromiumPath,
-    args: ['--disable-dev-shm-usage'],
+    args: ['--disable-dev-shm-usage', '--disable-blink-features=AutomationControlled'],
   });
 }
 
@@ -91,8 +91,8 @@ export async function extractUsageFromWorkspace(config: AppConfig, page: Page): 
   await page.goto(workspaceGoUrl(config.workspaceId), { waitUntil: 'domcontentloaded', timeout: 20000 });
   await waitForExpectedContent(page);
 
-  if (await looksUnauthenticated(page)) {
-    throw new Error('OpenCode session is still not authenticated after login. Complete the full login flow and return to opencode.ai before the browser closes.');
+  if (isAuthUrl(page.url())) {
+    throw new Error('OpenCode session is not authenticated. Run without --json to complete browser login.');
   }
 
   const pageText = await page.evaluate(() => document.body.innerText);
