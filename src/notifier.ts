@@ -9,11 +9,11 @@ export function notify(title: string, body: string): void {
   }
 }
 
-export function notifyStart(enabled: boolean): void {
+export function notifyStart(enabled: boolean, title = 'OpenCode Go', body = 'Checking your usage...'): void {
   if (!enabled) return;
 
   try {
-    execFileSync('notify-send', ['-u', 'low', '-t', '5000', 'OpenCode Go', 'Checking your usage...'], { stdio: 'ignore' });
+    execFileSync('notify-send', ['-u', 'low', '-t', '5000', title, body], { stdio: 'ignore' });
   } catch {
     // Desktop notifications are best-effort only.
   }

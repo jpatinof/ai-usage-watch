@@ -2,6 +2,8 @@
 
 Check your OpenCode Go subscription usage from the terminal, optionally with a desktop notification for Hyprland or any Linux desktop that supports `notify-send`.
 
+The project now has a small provider seam so more usage sources can be added later. Today, only OpenCode Go is supported.
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
 
@@ -43,6 +45,7 @@ cp .env.example .env
 ```
 
 ```env
+OPENCODE_GO_PROVIDER=opencode-go
 OPENCODE_WORKSPACE_ID=wrk_your_workspace_id
 CHROMIUM_PATH=/usr/bin/chromium
 ```
@@ -53,13 +56,16 @@ If you prefer JSON config, create `~/.config/opencode-go/config.json`:
 
 ```json
 {
+  "provider": "opencode-go",
   "workspaceId": "wrk_your_workspace_id",
   "chromiumPath": "/usr/bin/chromium",
   "notify": true
 }
 ```
 
-`workspaceId` is required. Without it, the checker stops instead of querying the wrong workspace.
+`provider` defaults to `opencode-go`, so existing configs do not need to change.
+
+`workspaceId` is required for OpenCode Go. Without it, the checker stops instead of querying the wrong workspace.
 
 `chromiumPath` is optional when your browser is installed in one of these paths:
 
@@ -90,13 +96,22 @@ opencode-go-usage --json
 Override config for one run:
 
 ```bash
-opencode-go-usage --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
+opencode-go-usage --provider opencode-go --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
 ```
+
+Current provider support:
+
+| Provider | Status | Notes |
+|----------|--------|-------|
+| `opencode-go` | Supported | Uses the existing OpenCode Go browser session and workspace usage page. |
+| `claude-code` | Unsupported placeholder | Personal subscription usage does not currently have a public usage API. The project intentionally does not scrape `claude.ai`. |
+| `codex` | Unsupported placeholder | Personal subscription usage does not currently have a public usage API. The project intentionally does not scrape `chatgpt.com`. |
 
 ## CLI Flags
 
 | Flag | Description |
 |------|-------------|
+| `--provider <id>` | Usage provider. Defaults to `opencode-go`. |
 | `--workspace <id>` | OpenCode workspace ID. |
 | `--chromium <path>` | Chromium-compatible browser executable path. |
 | `--no-notify` | Disable desktop notifications. |
@@ -108,6 +123,7 @@ opencode-go-usage --workspace wrk_your_workspace_id --chromium /usr/bin/brave-br
 
 | Variable | Description |
 |----------|-------------|
+| `OPENCODE_GO_PROVIDER` | Usage provider: `opencode-go`, `claude-code`, or `codex`. |
 | `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID. |
 | `CHROMIUM_PATH` | Chromium-compatible browser executable path. |
 | `OPENCODE_GO_CONFIG` | Optional config file path override. |
@@ -138,7 +154,9 @@ If you use plain Hyprland config instead of Omarchy Lua bindings:
 bind = ALT, apostrophe, exec, opencode-go-usage
 ```
 
-## How It Works
+## How OpenCode Go Works
+
+The current supported provider is `opencode-go`:
 
 1. Reads OpenCode credentials from `~/.local/share/opencode/auth.json`.
 2. Reuses a persistent browser profile from `~/.config/opencode-go/browser-profile` when available.
@@ -160,6 +178,7 @@ The code is split by responsibility:
 
 - `src/cli.ts` parses CLI flags and help output.
 - `src/config.ts` resolves CLI/env/config precedence.
+- `src/providers.ts` selects a usage provider and contains current provider capabilities.
 - `src/browser.ts` owns Playwright login and usage-page navigation.
 - `src/usage-parser.ts` parses usage values from page text/HTML.
 - `src/notifier.ts` owns desktop notifications.

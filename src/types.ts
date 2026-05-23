@@ -1,4 +1,7 @@
+export type ProviderId = 'opencode-go' | 'claude-code' | 'codex';
+
 export interface CliConfigOverrides {
+  providerId?: ProviderId;
   workspaceId?: string;
   chromiumPath?: string;
   notify?: boolean;
@@ -16,12 +19,14 @@ export interface ParsedArgs {
 }
 
 export interface FileConfig {
+  provider?: ProviderId;
   workspaceId?: string;
   chromiumPath?: string;
   notify?: boolean;
 }
 
 export interface AppConfig {
+  providerId: ProviderId;
   workspaceId: string;
   chromiumPath: string;
   notify: boolean;
@@ -30,6 +35,7 @@ export interface AppConfig {
   configPath: string;
   configFileLoaded: boolean;
   envFilesLoaded: string[];
+  providerSource: 'cli' | 'env' | 'config' | 'default';
   workspaceSource: 'cli' | 'env' | 'config' | 'missing';
   chromiumSource: 'cli' | 'env' | 'config' | 'auto-detected';
 }
@@ -41,4 +47,21 @@ export interface UsageResult {
   pct: number;
   bars: string;
   reset: string;
+}
+
+export interface ProviderMetadata {
+  id: ProviderId;
+  displayName: string;
+  supported: boolean;
+  startTitle: string;
+  startMessage: string;
+  checkingMessage: string;
+  successTitle: string;
+  errorTitle: string;
+  errorMessage: string;
+}
+
+export interface UsageProvider {
+  metadata: ProviderMetadata;
+  getUsage(config: AppConfig): Promise<UsageResult[]>;
 }

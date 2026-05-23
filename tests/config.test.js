@@ -53,9 +53,48 @@ test('resolveConfig uses CLI over env over config', () => {
   });
 
   assert.equal(config.workspaceId, 'wrk_cli');
+  assert.equal(config.providerId, 'opencode-go');
+  assert.equal(config.providerSource, 'default');
   assert.equal(config.workspaceSource, 'cli');
   assert.equal(config.chromiumPath, browser);
   assert.equal(config.notify, false);
+});
+
+test('resolveConfig reads provider from CLI over env over config', () => {
+  const { dir, missingEnv } = fixturePaths();
+  const configFile = join(dir, 'config.json');
+  writeFileSync(configFile, JSON.stringify({ provider: 'codex' }));
+
+  const config = resolveConfig(parseArgs(['--provider', 'claude-code']), {
+    OPENCODE_GO_CONFIG: configFile,
+    OPENCODE_GO_PROVIDER: 'codex',
+  }, {
+    defaultEnvFile: missingEnv,
+    localEnvFile: missingEnv,
+    chromiumCandidates: [],
+  });
+
+  assert.equal(config.providerId, 'claude-code');
+  assert.equal(config.providerSource, 'cli');
+  assert.equal(config.workspaceId, '');
+  assert.equal(config.chromiumPath, '');
+});
+
+test('parseArgs rejects invalid provider', () => {
+  assert.throws(() => parseArgs(['--provider', 'unknown']), /Invalid provider/);
+});
+
+test('resolveConfig rejects invalid provider from environment before workspace validation', () => {
+  const { missingConfig, missingEnv } = fixturePaths();
+
+  assert.throws(() => resolveConfig(parseArgs([]), {
+    OPENCODE_GO_CONFIG: missingConfig,
+    OPENCODE_GO_PROVIDER: 'unknown',
+  }, {
+    defaultEnvFile: missingEnv,
+    localEnvFile: missingEnv,
+    chromiumCandidates: [],
+  }), /Invalid provider/);
 });
 
 test('resolveConfig requires explicit workspace ID', () => {

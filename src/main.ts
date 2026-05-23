@@ -18,6 +18,8 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
       configPath: config.configPath,
       configFileLoaded: config.configFileLoaded,
       envFilesLoaded: config.envFilesLoaded,
+      providerId: config.providerId,
+      providerSource: config.providerSource,
       workspaceId: config.workspaceId,
       workspaceSource: config.workspaceSource,
       chromiumPath: config.chromiumPath,
