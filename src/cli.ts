@@ -21,7 +21,7 @@ Configuration precedence:
   CLI flags > environment variables > .env files > config file > defaults
 
 Environment variables:
-  AI_USAGE_WATCH_PROVIDER  Usage provider: opencode-go, claude-code, or codex.
+  AI_USAGE_WATCH_PROVIDER  Usage provider: opencode-go, claude-code, codex, or claude-ai.
   OPENCODE_WORKSPACE_ID  OpenCode workspace ID.
   CHROMIUM_PATH          Chromium-compatible browser executable path.
   AI_USAGE_WATCH_CONFIG     Optional config file path. Defaults to ~/.config/ai-usage-watch/config.json.

@@ -11,6 +11,9 @@
     "build": "npm run clean && tsc",
     "postbuild": "node -e \"if (process.platform !== 'win32') require('node:child_process').execSync('chmod +x dist/index.js')\"",
     "start": "npm run build && node dist/index.js",
+    "start:opencode-go": "npm run build && node dist/index.js --provider opencode-go",
+    "start:claude-ai": "npm run build && node dist/index.js --provider claude-ai",
+    "start:all": "npm run build && (node dist/index.js --provider opencode-go & node dist/index.js --provider claude-ai & wait)",
     "help": "npm run build && node dist/index.js --help",
     "test": "npm run build && node --test tests/*.test.js",
     "typecheck": "tsc --noEmit"
