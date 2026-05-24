@@ -9,7 +9,7 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc",
-    "postbuild": "chmod +x dist/index.js",
+    "postbuild": "node -e \"if (process.platform !== 'win32') require('node:child_process').execSync('chmod +x dist/index.js')\"",
     "start": "npm run build && node dist/index.js",
     "help": "npm run build && node dist/index.js --help",
     "test": "npm run build && node --test tests/*.test.js",

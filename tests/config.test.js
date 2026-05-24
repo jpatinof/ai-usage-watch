@@ -56,7 +56,7 @@ test('resolveEnvSources lets explicit OPENCODE_GO_ENV override local .env', () =
   writeFileSync(explicitEnvFile, 'OPENCODE_WORKSPACE_ID=wrk_explicit\n');
   writeFileSync(localEnvFile, 'OPENCODE_WORKSPACE_ID=wrk_local\n');
 
-  const sources = resolveEnvSources({ OPENCODE_GO_ENV: explicitEnvFile }, {
+  const sources = resolveEnvSources({ AI_USAGE_WATCH_ENV: explicitEnvFile }, {
     defaultEnvFile: join(dir, 'missing.env'),
     localEnvFile,
   });
@@ -72,7 +72,7 @@ test('resolveConfig uses CLI over env over config', () => {
   const parsedArgs = parseArgs(['--workspace', 'wrk_cli', '--no-notify']);
   const config = resolveConfig(parsedArgs, {
     OPENCODE_WORKSPACE_ID: 'wrk_env',
-    OPENCODE_GO_CONFIG: configFile,
+    AI_USAGE_WATCH_CONFIG: configFile,
   }, {
     defaultEnvFile: missingEnv,
     localEnvFile: missingEnv,
@@ -93,8 +93,8 @@ test('resolveConfig reads provider from CLI over env over config', () => {
   writeFileSync(configFile, JSON.stringify({ provider: 'codex' }));
 
   const config = resolveConfig(parseArgs(['--provider', 'claude-code']), {
-    OPENCODE_GO_CONFIG: configFile,
-    OPENCODE_GO_PROVIDER: 'codex',
+    AI_USAGE_WATCH_CONFIG: configFile,
+    AI_USAGE_WATCH_PROVIDER: 'codex',
   }, {
     defaultEnvFile: missingEnv,
     localEnvFile: missingEnv,
@@ -115,8 +115,8 @@ test('resolveConfig rejects invalid provider from environment before workspace v
   const { missingConfig, missingEnv } = fixturePaths();
 
   assert.throws(() => resolveConfig(parseArgs([]), {
-    OPENCODE_GO_CONFIG: missingConfig,
-    OPENCODE_GO_PROVIDER: 'unknown',
+    AI_USAGE_WATCH_CONFIG: missingConfig,
+    AI_USAGE_WATCH_PROVIDER: 'unknown',
   }, {
     defaultEnvFile: missingEnv,
     localEnvFile: missingEnv,
@@ -128,7 +128,7 @@ test('resolveConfig requires explicit workspace ID', () => {
   const { browser, missingConfig, missingEnv } = fixturePaths();
   const parsedArgs = parseArgs([]);
 
-  assert.throws(() => resolveConfig(parsedArgs, { OPENCODE_GO_CONFIG: missingConfig }, {
+  assert.throws(() => resolveConfig(parsedArgs, { AI_USAGE_WATCH_CONFIG: missingConfig }, {
     defaultEnvFile: missingEnv,
     localEnvFile: missingEnv,
     chromiumCandidates: [browser],
@@ -140,7 +140,7 @@ test('resolveConfig rejects malformed JSON config values', () => {
   const configFile = join(dir, 'config.json');
   writeFileSync(configFile, JSON.stringify({ workspaceId: 123, chromiumPath: browser, notify: true }));
 
-  assert.throws(() => resolveConfig(parseArgs([]), { OPENCODE_GO_CONFIG: configFile }, {
+  assert.throws(() => resolveConfig(parseArgs([]), { AI_USAGE_WATCH_CONFIG: configFile }, {
     defaultEnvFile: missingEnv,
     localEnvFile: missingEnv,
     chromiumCandidates: [browser],
@@ -152,7 +152,7 @@ test('resolveConfig coerces boolean-like notify from JSON config', () => {
   const configFile = join(dir, 'config.json');
   writeFileSync(configFile, JSON.stringify({ workspaceId: 'wrk_config', chromiumPath: browser, notify: 'false' }));
 
-  const config = resolveConfig(parseArgs([]), { OPENCODE_GO_CONFIG: configFile }, {
+  const config = resolveConfig(parseArgs([]), { AI_USAGE_WATCH_CONFIG: configFile }, {
     defaultEnvFile: missingEnv,
     localEnvFile: missingEnv,
     chromiumCandidates: [browser],

@@ -15,10 +15,35 @@ export const DEFAULT_ENV_FILE = `${SESSION_DIR}/.env`;
 export const LOCAL_ENV_FILE = `${PROJECT_DIR}/.env`;
 export const DEBUG_FILE = `${SESSION_DIR}/debug.html`;
 
-export const CHROMIUM_CANDIDATES = [
-  '/usr/bin/chromium',
-  '/usr/bin/chromium-browser',
-  '/usr/bin/google-chrome',
-  '/usr/bin/google-chrome-stable',
-  '/usr/bin/brave-browser',
-];
+const getChromiumCandidates = (): string[] => {
+  if (process.platform === 'win32') {
+    const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    const localAppData = process.env['LOCALAPPDATA'] || `${homedir()}\\AppData\\Local`;
+
+    return [
+      // Google Chrome
+      `${programFiles}\\Google\\Chrome\\Application\\chrome.exe`,
+      `${programFilesX86}\\Google\\Chrome\\Application\\chrome.exe`,
+      `${localAppData}\\Google\\Chrome\\Application\\chrome.exe`,
+      // Brave Browser
+      `${programFiles}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+      `${programFilesX86}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+      `${localAppData}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+      // Microsoft Edge
+      `${programFiles}\\Microsoft\\Edge\\Application\\msedge.exe`,
+      `${programFilesX86}\\Microsoft\\Edge\\Application\\msedge.exe`,
+      `${localAppData}\\Microsoft\\Edge\\Application\\msedge.exe`,
+    ];
+  }
+
+  return [
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/brave-browser',
+  ];
+};
+
+export const CHROMIUM_CANDIDATES = getChromiumCandidates();
