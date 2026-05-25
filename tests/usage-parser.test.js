@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extractUsages, getBars, parseResetTime } from '../dist/usage-parser.js';
+import { parseClaudeAiUsage } from '../dist/parsers/claude-ai-parser.js';
 
 test('parseResetTime formats days, hours, and minutes', () => {
   assert.equal(parseResetTime('Resets in 2 days 3 hours'), '2d 3h');
@@ -53,4 +54,54 @@ test('extractUsages fills missing percentage blocks from dollar patterns', () =>
   assert.equal(usages[0].bars, '██████████');
   assert.equal(usages[1].name, 'Weekly');
   assert.equal(usages[1].pct, 50);
+});
+
+test('extractUsages reads Spanish percentage usage blocks', () => {
+  const text = `
+    Uso Continuo 25% Se reinicia en 2 horas 5 minutos.
+    Uso Semanal 50% Se reinicia en 1 día 3 horas.
+    Uso Mensual 75% Se reinicia en 12 minutos.
+  `;
+
+  const usages = extractUsages(text, '');
+
+  assert.equal(usages.length, 3);
+  assert.deepEqual(usages.map(usage => usage.name), ['5h', 'Weekly', 'Monthly']);
+  assert.equal(usages[0].used, 3);
+  assert.equal(usages[1].used, 15);
+  assert.equal(usages[2].used, 45);
+  assert.equal(usages[0].reset, '2h 5m');
+  assert.equal(usages[1].reset, '1d 3h');
+  assert.equal(usages[2].reset, '12m');
+});
+
+test('parseClaudeAiUsage reads English and Spanish page text', () => {
+  const englishText = `
+    Current session
+    0% used
+    Starts when you send a message
+    All models
+    15% used
+    Resets fri, 12:00 AM
+  `;
+  const spanishText = `
+    Sesión actual
+    0% usado
+    Comienza cuando se envía un mensaje
+    Todos los modelos
+    15% usado
+    Se restablece vie, 12:00 a.m.
+  `;
+
+  const englishRows = parseClaudeAiUsage(englishText);
+  const spanishRows = parseClaudeAiUsage(spanishText);
+
+  assert.equal(englishRows.length, 2);
+  assert.equal(spanishRows.length, 2);
+  assert.equal(englishRows[0].name, 'Session');
+  assert.equal(spanishRows[0].name, 'Session');
+  assert.equal(englishRows[1].pct, 15);
+  assert.equal(spanishRows[1].pct, 15);
+  assert.equal(englishRows[1].reset, 'fri, 12:00 AM');
+  assert.equal(spanishRows[1].reset, 'vie, 12:00 a.m.');
 });

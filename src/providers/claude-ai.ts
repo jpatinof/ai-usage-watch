@@ -65,7 +65,7 @@ export function isClaudeAiAuthUrl(rawUrl: string): boolean {
 
 async function waitForClaudeAiUsagePage(page: Page): Promise<void> {
   await page.waitForFunction(
-    () => /\d+%\s*used/i.test(document.body?.innerText ?? ''),
+    () => /\d+%\s*(?:used|usado)/i.test(document.body?.innerText ?? ''),
     { timeout: 15000 },
   ).catch(() => {});
 }
@@ -88,7 +88,8 @@ async function runClaudeAiInteractiveLogin(config: AppConfig): Promise<UsageResu
   let page: Page | undefined;
 
   try {
-    page = await context.newPage();
+    const pages = context.pages();
+    page = pages.length > 0 ? pages[0] : await context.newPage();
 
     console.log('  Not authenticated. Opening browser...');
     await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded' });
@@ -99,6 +100,11 @@ async function runClaudeAiInteractiveLogin(config: AppConfig): Promise<UsageResu
       page.waitForURL(url => !isClaudeAiAuthUrl(url.toString()), { timeout: INTERACTIVE_LOGIN_TIMEOUT_MS }),
       waitForManualLoginConfirmation(),
     ]);
+
+    if (isClaudeAiAuthUrl(page.url())) {
+      console.log('  Waiting for successful login...');
+      await page.waitForURL(url => !isClaudeAiAuthUrl(url.toString()), { timeout: INTERACTIVE_LOGIN_TIMEOUT_MS });
+    }
     await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
     await waitForClaudeAiUsagePage(page);
@@ -136,7 +142,8 @@ export const claudeAiProvider: UsageProvider = {
       }
 
       context = await launchClaudeAiContext(config, true);
-      page = await context.newPage();
+      const pages = context.pages();
+      page = pages.length > 0 ? pages[0] : await context.newPage();
 
       await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
 

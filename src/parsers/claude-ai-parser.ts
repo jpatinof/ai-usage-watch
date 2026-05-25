@@ -12,13 +12,13 @@ export function parseClaudeAiUsage(pageText: string): ParsedUsageRow[] {
   const lines = pageText.split('\n').map(l => l.trim()).filter(Boolean);
 
   const sections = [
-    { label: 'Current session', name: 'Session' },
-    { label: 'All models', name: 'Weekly' },
-    { label: 'Claude Design', name: 'Claude Design' },
+    { labels: ['Current session', 'Sesión actual'], name: 'Session' },
+    { labels: ['All models', 'Todos los modelos'], name: 'Weekly' },
+    { labels: ['Claude Design'], name: 'Claude Design' },
   ];
 
   for (const section of sections) {
-    const idx = lines.findIndex(l => l === section.label || l.startsWith(section.label));
+    const idx = lines.findIndex(l => section.labels.some(label => l === label || l.startsWith(label)));
     if (idx === -1) continue;
 
     // Search for pct in next 6 lines
@@ -29,7 +29,7 @@ export function parseClaudeAiUsage(pageText: string): ParsedUsageRow[] {
       const line = lines[i];
 
       if (pct === null) {
-        const pctMatch = line.match(/(\d+)%\s*used/i);
+        const pctMatch = line.match(/(\d+)%\s*(?:used|usado)/i);
         if (pctMatch?.[1]) {
           const parsed = Number.parseInt(pctMatch[1], 10);
           if (!Number.isNaN(parsed)) pct = parsed;
@@ -37,17 +37,17 @@ export function parseClaudeAiUsage(pageText: string): ParsedUsageRow[] {
       }
 
       if (!reset) {
-        const resetInMatch = line.match(/Resets in (.+)/i);
+        const resetInMatch = line.match(/(?:Resets in|Se restablece en)\s+(.+)/i);
         if (resetInMatch?.[1]) {
           reset = resetInMatch[1].trim().replace(/[<>&"]/g, '');
           continue;
         }
-        const resetDayMatch = line.match(/Resets\s+(\w{3}\s+[\d:]+\s*[AP]M)/i);
+        const resetDayMatch = line.match(/(?:Resets|Se restablece)\s+(.+)/i);
         if (resetDayMatch?.[1]) {
           reset = resetDayMatch[1].trim().replace(/[<>&"]/g, '');
           continue;
         }
-        if (/haven't used/i.test(line)) {
+        if (/haven't used|aún no has usado|comienza cuando/i.test(line)) {
           reset = '';
         }
       }

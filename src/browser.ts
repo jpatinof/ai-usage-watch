@@ -29,7 +29,7 @@ function workspaceGoUrl(workspaceId: string): string {
 async function waitForExpectedContent(page: Page): Promise<void> {
   await page.waitForFunction(() => {
     const text = document.body?.innerText ?? '';
-    return /Rolling Usage|Weekly Usage|Monthly Usage|\$[0-9.]+\s*\/\s*\$?(12|30|60)|sign in|log in|login|continue with google|continue with github/i.test(text);
+    return /Rolling Usage|Uso Continuo|Weekly Usage|Uso Semanal|Monthly Usage|Uso Mensual|\$[0-9.]+\s*\/\s*\$?(12|30|60)|sign in|iniciar sesión|iniciar sesion|log in|login|continue with google|continuar con google|continue with github|continuar con github/i.test(text);
   }, { timeout: 15000 }).catch(() => {});
 }
 
@@ -56,7 +56,7 @@ export async function looksUnauthenticated(page: Page): Promise<boolean> {
 
   try {
     const text = await page.evaluate(() => document.body.innerText.toLowerCase());
-    return /sign in|log in|login|continue with google|continue with github/.test(text);
+    return /sign in|iniciar sesión|iniciar sesion|log in|login|continue with google|continuar con google|continue with github|continuar con github/.test(text);
   } catch {
     return false;
   }
@@ -91,7 +91,7 @@ export async function extractUsageFromWorkspace(config: AppConfig, page: Page): 
   await page.goto(workspaceGoUrl(config.workspaceId), { waitUntil: 'domcontentloaded', timeout: 20000 });
   await waitForExpectedContent(page);
 
-  if (isAuthUrl(page.url())) {
+  if (isAuthUrl(page.url()) || await looksUnauthenticated(page)) {
     throw new Error('OpenCode session is not authenticated. Run without --json to complete browser login.');
   }
 
@@ -110,7 +110,8 @@ export async function runInteractiveLogin(config: AppConfig): Promise<UsageResul
   let loginPage: Page | undefined;
 
   try {
-    loginPage = await loginContext.newPage();
+    const pages = loginContext.pages();
+    loginPage = pages.length > 0 ? pages[0] : await loginContext.newPage();
 
     console.log('  Not authenticated. Opening browser...');
     await loginPage.goto(workspaceGoUrl(config.workspaceId), { waitUntil: 'domcontentloaded' });

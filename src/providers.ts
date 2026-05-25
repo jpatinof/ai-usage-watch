@@ -23,7 +23,8 @@ const openCodeGoProvider: UsageProvider = {
 
     try {
       context = await launchPersistentContext(config, true);
-      page = await context.newPage();
+      const pages = context.pages();
+      page = pages.length > 0 ? pages[0] : await context.newPage();
 
       try {
         return await extractUsageFromWorkspace(config, page);

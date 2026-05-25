@@ -8,15 +8,15 @@ export function getBars(pct: number): string {
 }
 
 export function parseResetTime(text: string): string | null {
-  const match = text.match(/Resets in (\d+)\s*(hour|day|minute)s?(?:\s*(\d+)\s*(hour|minute)s?)?/i);
+  const match = text.match(/(?:Resets in|Se reinicia en)\s*(\d+)\s*(hour|day|minute|hora|día|dia|minuto)s?(?:\s*(\d+)\s*(hour|minute|hora|minuto)s?)?/i);
   if (!match) return null;
 
   const num1 = Number.parseInt(match[1] ?? '', 10);
   const unit1 = match[2]?.toLowerCase();
   const num2 = match[3] ? Number.parseInt(match[3], 10) : null;
 
-  if (unit1 === 'day') return `${num1}d ${num2 ? `${num2}h` : '0h'}`;
-  if (unit1 === 'hour') return num2 ? `${num1}h ${num2}m` : `${num1}h`;
+  if (unit1 === 'day' || unit1 === 'día' || unit1 === 'dia') return `${num1}d ${num2 ? `${num2}h` : '0h'}`;
+  if (unit1 === 'hour' || unit1 === 'hora') return num2 ? `${num1}h ${num2}m` : `${num1}h`;
   return `${num1}m`;
 }
 
@@ -24,9 +24,9 @@ export function extractUsages(text: string, html: string): UsageResult[] {
   const results: UsageResult[] = [];
 
   const usageBlocks = [
-    { name: '5h', limit: 12, pctRegex: /Rolling Usage[\s\S]*?(\d+)%/i, resetRegex: /Rolling Usage[\s\S]*?Resets in [^.]+/i },
-    { name: 'Weekly', limit: 30, pctRegex: /Weekly Usage[\s\S]*?(\d+)%/i, resetRegex: /Weekly Usage[\s\S]*?Resets in [^.]+/i },
-    { name: 'Monthly', limit: 60, pctRegex: /Monthly Usage[\s\S]*?(\d+)%/i, resetRegex: /Monthly Usage[\s\S]*?Resets in [^.]+/i },
+    { name: '5h', limit: 12, pctRegex: /(?:Rolling Usage|Uso Continuo)[\s\S]*?(\d+)%/i, resetRegex: /(?:Rolling Usage|Uso Continuo)[\s\S]*?(?:Resets in|Se reinicia en)[^.]+/i },
+    { name: 'Weekly', limit: 30, pctRegex: /(?:Weekly Usage|Uso Semanal)[\s\S]*?(\d+)%/i, resetRegex: /(?:Weekly Usage|Uso Semanal)[\s\S]*?(?:Resets in|Se reinicia en)[^.]+/i },
+    { name: 'Monthly', limit: 60, pctRegex: /(?:Monthly Usage|Uso Mensual)[\s\S]*?(\d+)%/i, resetRegex: /(?:Monthly Usage|Uso Mensual)[\s\S]*?(?:Resets in|Se reinicia en)[^.]+/i },
   ];
 
   for (const block of usageBlocks) {

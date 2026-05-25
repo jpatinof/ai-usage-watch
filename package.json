@@ -13,7 +13,7 @@
     "start": "npm run build && node dist/index.js",
     "start:opencode-go": "npm run build && node dist/index.js --provider opencode-go",
     "start:claude-ai": "npm run build && node dist/index.js --provider claude-ai",
-    "start:all": "npm run build && (node dist/index.js --provider opencode-go & node dist/index.js --provider claude-ai & wait)",
+    "start:all": "npm run build && node -e \"const { spawn } = require('node:child_process'); const run = (args) => new Promise(r => spawn('node', args, { stdio: 'inherit' }).on('close', r)); Promise.all([run(['dist/index.js', '--provider', 'opencode-go']), run(['dist/index.js', '--provider', 'claude-ai'])]);\"",
     "help": "npm run build && node dist/index.js --help",
     "test": "npm run build && node --test tests/*.test.js",
     "typecheck": "tsc --noEmit"
