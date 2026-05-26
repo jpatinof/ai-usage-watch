@@ -1,6 +1,6 @@
 # AI Usage Watch
 
-Monitor your AI subscription usage from the terminal, with optional desktop notifications for Hyprland or any Linux desktop that supports `notify-send`.
+Monitor your AI subscription usage from the terminal, with optional desktop notifications on Linux, macOS, and Windows.
 
 Supports multiple providers — currently **OpenCode Go** and **Claude.ai** (personal Pro subscription).
 
@@ -10,7 +10,7 @@ Supports multiple providers — currently **OpenCode Go** and **Claude.ai** (per
 ## Requirements
 
 - Node.js 18+
-- Chromium, Chromium Browser, Google Chrome, or Brave (used by both providers)
+- A Chromium-compatible browser: Chromium, Google Chrome, Brave, or Microsoft Edge (used by supported browser-based providers)
 
 Provider-specific:
 
@@ -51,9 +51,9 @@ OPENCODE_WORKSPACE_ID=wrk_your_workspace_id
 CHROMIUM_PATH=/usr/bin/chromium
 ```
 
-For a global setup, create `~/.config/ai-usage-watch/.env` with the same variables.
+For a global setup, create the app `.env` file with the same variables. The default location is platform-specific; see [Platform Support](#platform-support).
 
-Or use JSON config at `~/.config/ai-usage-watch/config.json`:
+Or use JSON config at the platform-specific app config path:
 
 ```json
 {
@@ -78,7 +78,7 @@ ai-usage-watch --provider claude-ai
 
 A browser window will open. Log in to your Claude.ai account, then close or leave the browser — the tool will detect the authenticated session and continue automatically.
 
-After the first login, the session is saved to `~/.config/ai-usage-watch/browser-profile-claude-ai/` and reused on every subsequent run. No login prompt will appear again unless the session expires.
+After the first login, the session is saved to the platform-specific `browser-profile-claude-ai` directory and reused on every subsequent run. No login prompt will appear again unless the session expires.
 
 To set `claude-ai` as the default provider, add it to your config:
 
@@ -86,7 +86,7 @@ To set `claude-ai` as the default provider, add it to your config:
 AI_USAGE_WATCH_PROVIDER=claude-ai
 ```
 
-or in `~/.config/ai-usage-watch/config.json`:
+or in the app config JSON file:
 
 ```json
 {
@@ -98,13 +98,37 @@ or in `~/.config/ai-usage-watch/config.json`:
 
 ### Chromium auto-detection
 
-`chromiumPath` is optional when your browser is installed in one of these locations:
+`chromiumPath` is optional when your browser is installed in one of the standard locations checked for your OS.
+
+Linux candidates include:
 
 - `/usr/bin/chromium`
 - `/usr/bin/chromium-browser`
 - `/usr/bin/google-chrome`
 - `/usr/bin/google-chrome-stable`
 - `/usr/bin/brave-browser`
+
+macOS candidates include the app bundle executables for Chrome, Chromium, Brave, and Microsoft Edge in `/Applications` and `~/Applications`.
+
+Windows candidates include Chrome, Brave, and Microsoft Edge under `Program Files`, `Program Files (x86)`, and `LOCALAPPDATA`.
+
+## Platform Support
+
+| OS | Status | Paths | Notifications |
+|---|---|---|---|
+| Linux | Supported | Uses `XDG_CONFIG_HOME` / `XDG_DATA_HOME`, with `~/.config` and `~/.local/share` fallbacks. | Uses `notify-send` when available. |
+| macOS | Supported | Uses `~/Library/Application Support/ai-usage-watch`. | Uses built-in `osascript`. |
+| Windows | Best-effort | Uses `APPDATA` for config/profile and `LOCALAPPDATA` for local data. | Uses PowerShell toast/balloon fallback. |
+
+Desktop notifications are always best-effort. If the OS notification command is unavailable or blocked, the CLI still prints terminal output.
+
+Default app files by OS:
+
+| OS | Config / profile root | OpenCode auth lookup |
+|---|---|---|
+| Linux | `~/.config/ai-usage-watch` | `~/.local/share/opencode/auth.json` |
+| macOS | `~/Library/Application Support/ai-usage-watch` | `~/Library/Application Support/opencode/auth.json` |
+| Windows | `%APPDATA%\\ai-usage-watch` | `%LOCALAPPDATA%\\opencode\\auth.json` |
 
 ## Usage
 
@@ -148,7 +172,7 @@ npm run start
 | `--chromium <path>` | Chromium-compatible browser executable path. |
 | `--no-notify` | Disable desktop notifications. |
 | `--json` | Print machine-readable JSON and disable notifications. |
-| `--debug` | Print config resolution and save failed page HTML to `~/.config/ai-usage-watch/debug.html`. |
+| `--debug` | Print config resolution and save failed page HTML to the app debug file. |
 | `--help` | Show usage help. |
 
 ## Environment Variables
@@ -159,7 +183,7 @@ npm run start
 | `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID (required for `opencode-go`). |
 | `CHROMIUM_PATH` | Chromium-compatible browser executable path. |
 | `AI_USAGE_WATCH_CONFIG` | Optional config file path override. |
-| `AI_USAGE_WATCH_ENV` | Optional `.env` file path override. Defaults to `~/.config/ai-usage-watch/.env`. |
+| `AI_USAGE_WATCH_ENV` | Optional `.env` file path override. Defaults to the platform-specific app `.env`. |
 
 Configuration precedence:
 
@@ -169,7 +193,7 @@ CLI flags > shell environment variables > .env files > config file > defaults
 
 The app reads `.env` from:
 
-1. `~/.config/ai-usage-watch/.env` or the path in `AI_USAGE_WATCH_ENV`
+1. The platform-specific app `.env` or the path in `AI_USAGE_WATCH_ENV`
 2. The package/project `.env` (useful for `npm run start` during local development)
 
 ## Hyprland Binding
@@ -196,14 +220,14 @@ bind = ALT, apostrophe, exec, ai-usage-watch --provider claude-ai
 
 ### OpenCode Go
 
-1. Reuses a persistent browser profile from `~/.config/ai-usage-watch/browser-profile/`.
+1. Reuses a persistent browser profile from the platform-specific `browser-profile` directory.
 2. Opens an interactive browser login flow if the session is missing or expired.
 3. Visits `https://opencode.ai/workspace/<workspaceId>/go` and extracts rolling, weekly, and monthly usage values.
 4. Prints terminal output, JSON, or a desktop notification depending on flags.
 
 ### Claude.ai
 
-1. Reuses a persistent browser profile from `~/.config/ai-usage-watch/browser-profile-claude-ai/` (isolated from the OpenCode Go profile).
+1. Reuses a persistent browser profile from the platform-specific `browser-profile-claude-ai` directory (isolated from the OpenCode Go profile).
 2. Opens an interactive browser login flow if the session is missing or expired.
 3. Visits `https://claude.ai/settings/usage` and extracts current session and weekly usage percentages.
 4. Prints terminal output, JSON, or a desktop notification depending on flags.

@@ -53,6 +53,7 @@ export interface ProviderMetadata {
   id: ProviderId;
   displayName: string;
   supported: boolean;
+  requiresBrowser: boolean;
   startTitle: string;
   startMessage: string;
   checkingMessage: string;

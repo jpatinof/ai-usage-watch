@@ -4,7 +4,7 @@ Guidance for coding agents working on this repository. Treat this as the project
 
 ## Project snapshot
 
-`opencode-go-usage` is a Node.js/TypeScript CLI that checks OpenCode Go subscription usage from the terminal. It can print human output, JSON output, and optional desktop notifications through `notify-send`.
+`opencode-go-usage` is a Node.js/TypeScript CLI that checks OpenCode Go subscription usage from the terminal. It can print human output, JSON output, and optional best-effort desktop notifications on Linux, macOS, and Windows.
 
 The codebase has a small multi-provider seam:
 
@@ -59,8 +59,9 @@ Notes:
 | `src/browser.ts` | OpenCode-specific Playwright login/navigation/scraping helpers. |
 | `src/usage-parser.ts` | OpenCode Go usage parser. |
 | `src/output.ts` | Human and JSON output formatting. |
-| `src/notifier.ts` | Best-effort desktop notifications through `notify-send`. |
-| `src/types.ts` | Shared config, provider, and usage result types. |
+| `src/notifier.ts` | Best-effort desktop notifications for Linux, macOS, and Windows. |
+| `src/paths.ts` | Platform-aware config/data paths and browser executable detection. |
+| `src/types.ts` | Shared config, provider metadata, and usage result types. |
 
 ## Code style and conventions
 
@@ -68,10 +69,11 @@ Notes:
 - Keep provider-specific behavior behind the provider seam. Do not add provider conditionals throughout unrelated modules.
 - Preserve existing behavior for `opencode-go` unless the task explicitly asks to change it.
 - Keep configuration precedence intact: CLI flags > shell/env files > config file > defaults.
-- Preserve `.env` file ordering: the project `.env` may override the default global `.env` for local development, but an explicit `OPENCODE_GO_ENV` file overrides the project `.env`.
+- Preserve `.env` file ordering: the project `.env` may override the default global `.env` for local development, but an explicit `AI_USAGE_WATCH_ENV` file overrides the project `.env`.
 - Validate user input early and produce short, actionable errors.
 - Keep browser automation isolated to provider-specific code.
-- Desktop notifications are best-effort only; never fail the CLI because `notify-send` is unavailable.
+- Desktop notifications are best-effort only; never fail the CLI because OS notification tooling is unavailable or fails.
+- Keep cross-platform behavior centralized in `src/paths.ts` and `src/notifier.ts`; avoid scattering `process.platform` checks across unrelated modules.
 
 ## Provider implementation rules
 
@@ -79,17 +81,20 @@ When adding or changing providers:
 
 1. Add or update the `ProviderId` union in `src/types.ts`.
 2. Add the provider to `PROVIDER_IDS` and the registry in `src/providers.ts`.
-3. Keep provider metadata accurate: display name, support state, titles, and error messages.
-4. Add config validation only for the providers that need it. Unsupported providers should fail with a provider-specific message, not with unrelated OpenCode workspace/browser errors.
-5. Do not scrape private web apps such as `claude.ai` or `chatgpt.com` unless the maintainer explicitly approves the tradeoff.
-6. Do not read credential files for usage data. Files such as `~/.codex/auth.json` or Claude credentials are sensitive auth state, not usage sources.
-7. If using official admin APIs, clearly distinguish API/org usage from personal subscription quota.
+3. Keep provider metadata accurate: display name, support state, browser requirements, titles, and error messages.
+4. If a provider uses Playwright/browser automation, mark it with `requiresBrowser` so config validation can fail early with a useful browser error.
+5. Add config validation only for the providers that need it. Unsupported providers should fail with a provider-specific message, not with unrelated OpenCode workspace/browser errors.
+6. Do not scrape private web apps such as `claude.ai` or `chatgpt.com` unless the maintainer explicitly approves the tradeoff.
+7. Do not read credential files for usage data. Files such as `~/.codex/auth.json` or Claude credentials are sensitive auth state, not usage sources.
+8. If using official admin APIs, clearly distinguish API/org usage from personal subscription quota.
 
 ## Testing guidance
 
 - Prefer focused tests around pure functions and config resolution.
 - Parser tests should cover both normal page text and fallback formats.
 - Config tests should cover precedence, invalid values, provider defaults, and provider-specific validation.
+- Cross-platform tests should inject platform/env/home/path-existence/exec behavior instead of depending on the runner OS.
+- If a change affects `src/paths.ts`, provider browser requirements, or notifications, add or update tests in `tests/config.test.js`.
 - Avoid tests that require a real browser session, real credentials, or network access.
 
 ## Security and privacy
@@ -98,6 +103,7 @@ When adding or changing providers:
 - Treat these paths as sensitive runtime state:
   - `~/.config/opencode-go/browser-profile`
   - `~/.config/opencode-go/debug.html`
+  - Platform-specific browser profile and debug paths resolved by `src/paths.ts`
   - `~/.codex/auth.json`
   - Claude credential files
 - Keep debug output useful but avoid printing secrets.

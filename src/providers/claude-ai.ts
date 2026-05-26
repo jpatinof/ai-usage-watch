@@ -124,6 +124,7 @@ export const claudeAiProvider: UsageProvider = {
     id: 'claude-ai',
     displayName: 'Anthropic',
     supported: true,
+    requiresBrowser: true,
     startTitle: '🤖 Anthropic',
     startMessage: '🔍 Checking your plan usage...',
     checkingMessage: '🔍 Checking your Anthropic plan usage...',

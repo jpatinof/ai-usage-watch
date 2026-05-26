@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { CHROMIUM_CANDIDATES, DEFAULT_CONFIG_FILE, DEFAULT_ENV_FILE, LOCAL_ENV_FILE } from './paths.js';
 import { resolveEnvSources } from './env.js';
-import { DEFAULT_PROVIDER_ID, isProviderId, PROVIDER_IDS } from './providers.js';
+import { DEFAULT_PROVIDER_ID, getProvider, isProviderId, PROVIDER_IDS } from './providers.js';
 import type { AppConfig, FileConfig, ParsedArgs, ProviderId } from './types.js';
 
 export interface ResolveConfigOptions {
@@ -96,6 +96,7 @@ export function resolveConfig(
   if (!isProviderId(rawProviderId)) throw new Error(`Invalid provider "${rawProviderId}". Expected one of: ${PROVIDER_IDS.join(', ')}.`);
 
   const providerId = rawProviderId;
+  const provider = getProvider(providerId);
   const workspaceId = parsedArgs.cli.workspaceId ?? envConfig.workspaceId ?? fileConfig.workspaceId;
   const configuredChromiumPath = parsedArgs.cli.chromiumPath ?? envConfig.chromiumPath ?? fileConfig.chromiumPath;
   const chromiumPath = configuredChromiumPath || firstExistingPath(chromiumCandidates);
@@ -105,11 +106,11 @@ export function resolveConfig(
     throw new Error('Missing workspace ID. Set --workspace, OPENCODE_WORKSPACE_ID in .env, OPENCODE_WORKSPACE_ID in your shell, or workspaceId in config.json.');
   }
 
-  if (providerId === 'opencode-go' && configuredChromiumPath && !existsSync(configuredChromiumPath)) {
+  if (provider.metadata.requiresBrowser && configuredChromiumPath && !existsSync(configuredChromiumPath)) {
     throw new Error(`Browser not found at ${configuredChromiumPath}. Set --chromium, CHROMIUM_PATH, or chromiumPath in config.json.`);
   }
 
-  if (providerId === 'opencode-go' && !chromiumPath) {
+  if (provider.metadata.requiresBrowser && !chromiumPath) {
     throw new Error(`No Chromium-compatible browser found. Install Chromium or set --chromium/CHROMIUM_PATH. Checked: ${chromiumCandidates.join(', ')}`);
   }
 

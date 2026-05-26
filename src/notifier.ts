@@ -1,7 +1,25 @@
 import { execFileSync } from 'node:child_process';
 import type { UsageResult } from './types.js';
 
-function notifyWindows(title: string, body: string, durationMs: number): void {
+type ExecFile = (command: string, args?: readonly string[], options?: object) => unknown;
+
+interface NotifyOptions {
+  platform?: NodeJS.Platform;
+  execFile?: ExecFile;
+}
+
+function runExecFile(execFile: ExecFile, command: string, args: readonly string[], options: object): void {
+  try {
+    const result = execFile(command, args, options);
+    if (result && typeof (result as Promise<unknown>).catch === 'function') {
+      void (result as Promise<unknown>).catch(() => {});
+    }
+  } catch {
+    // Desktop notifications are best-effort only.
+  }
+}
+
+function notifyWindows(title: string, body: string, durationMs: number, execFile: ExecFile): void {
   const escapeXml = (str: string) => str.replace(/[<>&'"]/g, (c) => {
     switch (c) {
       case '<': return '&lt;';
@@ -50,36 +68,52 @@ function notifyWindows(title: string, body: string, durationMs: number): void {
     }
   `.trim();
 
-  try {
-    const buffer = Buffer.from(psScript, 'utf-16le');
-    const base64 = buffer.toString('base64');
-    execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', base64], { stdio: 'ignore' });
-  } catch {
-    // Best-effort
-  }
+  const buffer = Buffer.from(psScript, 'utf-16le');
+  const base64 = buffer.toString('base64');
+  runExecFile(execFile, 'powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', base64], { stdio: 'ignore' });
 }
 
-export function notify(title: string, body: string): void {
+function notifyMac(title: string, body: string, execFile: ExecFile): void {
+  const escapeAppleScript = (value: string) => value
+    .replace(/\r\n|\r|\n/g, '\\n')
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"');
+  runExecFile(execFile, 'osascript', [
+    '-e',
+    `display notification "${escapeAppleScript(body)}" with title "${escapeAppleScript(title)}"`,
+  ], { stdio: 'ignore' });
+}
+
+export function notify(title: string, body: string, options: NotifyOptions = {}): void {
+  const platform = options.platform ?? process.platform;
+  const execFile = options.execFile ?? execFileSync;
+
   try {
-    if (process.platform === 'win32') {
-      notifyWindows(title, body, 12000);
+    if (platform === 'win32') {
+      notifyWindows(title, body, 12000, execFile);
+    } else if (platform === 'darwin') {
+      notifyMac(title, body, execFile);
     } else {
-      execFileSync('notify-send', ['-u', 'low', '-t', '12000', title, body], { stdio: 'ignore' });
+      runExecFile(execFile, 'notify-send', ['-u', 'low', '-t', '12000', title, body], { stdio: 'ignore' });
     }
   } catch {
     // Desktop notifications are best-effort only.
   }
 }
 
-export function notifyStart(enabled: boolean, title = '🔋 OpenCode Go', body = '🔍 Checking your usage...'): void {
+export function notifyStart(enabled: boolean, title = '🔋 OpenCode Go', body = '🔍 Checking your usage...', options: NotifyOptions = {}): void {
   if (!enabled) return;
+  const platform = options.platform ?? process.platform;
+  const execFile = options.execFile ?? execFileSync;
 
   try {
-    if (process.platform === 'win32') {
+    if (platform === 'win32') {
       // No-op on Windows to prevent notification spam and Action Center queuing lag.
       return;
+    } else if (platform === 'darwin') {
+      notifyMac(title, body, execFile);
     } else {
-      execFileSync('notify-send', ['-u', 'low', '-t', '5000', title, body], { stdio: 'ignore' });
+      runExecFile(execFile, 'notify-send', ['-u', 'low', '-t', '5000', title, body], { stdio: 'ignore' });
     }
   } catch {
     // Desktop notifications are best-effort only.
