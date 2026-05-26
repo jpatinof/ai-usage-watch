@@ -18,6 +18,7 @@ export interface PlatformPaths {
   sessionFile: string;
   profileDir: string;
   claudeAiProfileDir: string;
+  codexProfileDir: string;
   defaultConfigFile: string;
   defaultEnvFile: string;
   debugFile: string;
@@ -52,6 +53,7 @@ export function getPlatformPaths(options: PlatformPathOptions = {}): PlatformPat
     sessionFile: path.join(sessionDir, 'session.json'),
     profileDir: path.join(sessionDir, 'browser-profile'),
     claudeAiProfileDir: path.join(sessionDir, 'browser-profile-claude-ai'),
+    codexProfileDir: path.join(sessionDir, 'browser-profile-codex'),
     defaultConfigFile: path.join(sessionDir, 'config.json'),
     defaultEnvFile: path.join(sessionDir, '.env'),
     debugFile: path.join(sessionDir, 'debug.html'),
@@ -65,6 +67,7 @@ export const SESSION_DIR = DEFAULT_PATHS.sessionDir;
 export const SESSION_FILE = DEFAULT_PATHS.sessionFile;
 export const PROFILE_DIR = DEFAULT_PATHS.profileDir;
 export const PROFILE_DIR_CLAUDE_AI = DEFAULT_PATHS.claudeAiProfileDir;
+export const PROFILE_DIR_CODEX = DEFAULT_PATHS.codexProfileDir;
 export const DEFAULT_CONFIG_FILE = DEFAULT_PATHS.defaultConfigFile;
 export const DEFAULT_ENV_FILE = DEFAULT_PATHS.defaultEnvFile;
 export const LOCAL_ENV_FILE = `${PROJECT_DIR}/.env`;

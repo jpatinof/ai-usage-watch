@@ -2,7 +2,7 @@
 
 Monitor your AI subscription usage from the terminal, with optional desktop notifications on Linux, macOS, and Windows.
 
-Supports multiple providers — currently **OpenCode Go** and **Claude.ai** (personal Pro subscription).
+Supports multiple providers — currently **OpenCode Go**, **Claude.ai** (personal Pro subscription), and **Codex**.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
@@ -18,6 +18,7 @@ Provider-specific:
 |---|---|
 | `opencode-go` | OpenCode Go subscription + workspace ID |
 | `claude-ai` | Claude.ai account (Pro or higher) |
+| `codex` | ChatGPT account with Codex usage analytics access |
 
 ## Installation
 
@@ -96,6 +97,22 @@ or in the app config JSON file:
 
 `chromiumPath` is still required (or auto-detected from standard paths — see below).
 
+### Codex
+
+No API key or workspace ID needed. The provider uses Playwright with an isolated persistent browser profile to scrape the private ChatGPT/Codex analytics page.
+
+```bash
+ai-usage-watch --provider codex
+```
+
+A browser window will open on first run. Complete ChatGPT login in that browser; email verification and Google login can briefly leave ChatGPT during the flow.
+
+After login, the session is saved to the platform-specific `browser-profile-codex` directory and reused on later runs.
+
+Codex values are reported as used percentages. The analytics page shows remaining percentages, so the CLI converts them to `used = 100 - remaining` and displays `<pct> / 100`.
+
+This provider depends on a private web page and is more fragile than an official API. Login flow or DOM changes on `chatgpt.com` may require parser/browser updates.
+
 ### Chromium auto-detection
 
 `chromiumPath` is optional when your browser is installed in one of the standard locations checked for your OS.
@@ -138,11 +155,13 @@ ai-usage-watch
 
 # Specific provider
 ai-usage-watch --provider claude-ai
+ai-usage-watch --provider codex
 ai-usage-watch --provider opencode-go
 
 # JSON output (disables desktop notifications)
 ai-usage-watch --json
 ai-usage-watch --provider claude-ai --json
+ai-usage-watch --provider codex --json
 
 # Override config for one run
 ai-usage-watch --provider opencode-go --workspace wrk_your_workspace_id --chromium /usr/bin/brave-browser
@@ -160,14 +179,14 @@ npm run start
 |---|---|---|
 | `opencode-go` | ✅ Supported | Browser scrape of `opencode.ai/workspace/<id>/go`. Requires workspace ID. |
 | `claude-ai` | ✅ Supported | Browser scrape of `claude.ai/settings/usage`. Shows session and weekly limits. |
+| `codex` | ✅ Supported | Browser scrape of `chatgpt.com/codex/cloud/settings/analytics`. Shows 5 hour and weekly percentage usage. |
 | `claude-code` | ⏳ Placeholder | No public usage API available. |
-| `codex` | ⏳ Placeholder | No public usage API available. |
 
 ## CLI Flags
 
 | Flag | Description |
 |---|---|
-| `--provider <id>` | Usage provider: `opencode-go`, `claude-ai`. Defaults to `opencode-go`. |
+| `--provider <id>` | Usage provider: `opencode-go`, `claude-ai`, `codex`, or `claude-code`. Defaults to `opencode-go`. |
 | `--workspace <id>` | OpenCode workspace ID (required for `opencode-go`). |
 | `--chromium <path>` | Chromium-compatible browser executable path. |
 | `--no-notify` | Disable desktop notifications. |
@@ -179,7 +198,7 @@ npm run start
 
 | Variable | Description |
 |---|---|
-| `AI_USAGE_WATCH_PROVIDER` | Usage provider: `opencode-go` or `claude-ai`. |
+| `AI_USAGE_WATCH_PROVIDER` | Usage provider: `opencode-go`, `claude-ai`, `codex`, or `claude-code`. |
 | `OPENCODE_WORKSPACE_ID` | OpenCode workspace ID (required for `opencode-go`). |
 | `CHROMIUM_PATH` | Chromium-compatible browser executable path. |
 | `AI_USAGE_WATCH_CONFIG` | Optional config file path override. |
@@ -198,7 +217,7 @@ The app reads `.env` from:
 
 ## Hyprland Binding
 
-To run both providers in parallel on a single keypress (each sends its own notification):
+To run multiple providers in parallel on a single keypress (each sends its own notification):
 
 ```lua
 hl.bind("ALT + apostrophe", hl.dsp.exec_cmd("bash -c 'ai-usage-watch & ai-usage-watch --provider claude-ai &'"), { description = "Show AI usage (all providers)" })
@@ -234,6 +253,15 @@ bind = ALT, apostrophe, exec, ai-usage-watch --provider claude-ai
 
 Usage values from Claude.ai are percentages (0–100). There is no public API for absolute token or dollar limits, so values are shown as `<pct> / 100`.
 
+### Codex
+
+1. Reuses a persistent browser profile from the platform-specific `browser-profile-codex` directory.
+2. Opens an interactive ChatGPT login flow if the session is missing or expired.
+3. Visits `https://chatgpt.com/codex/cloud/settings/analytics` and extracts 5 hour and weekly remaining percentages.
+4. Converts remaining percentages to used percentages before printing output.
+
+Codex scraping is intentionally isolated to its provider module. The page is private and unsupported by a public API, so extraction can break when ChatGPT changes login or analytics markup.
+
 ## Development
 
 The app is written in TypeScript and compiled to `dist/`.
@@ -252,7 +280,9 @@ Code structure:
 | `src/config.ts` | Resolves CLI / env / config file precedence |
 | `src/providers.ts` | Provider registry and dispatch |
 | `src/providers/claude-ai.ts` | Claude.ai provider (Playwright) |
+| `src/providers/codex.ts` | Codex provider (Playwright) |
 | `src/parsers/claude-ai-parser.ts` | Claude.ai page text parser |
+| `src/parsers/codex-parser.ts` | Codex analytics page text parser |
 | `src/browser.ts` | OpenCode Go Playwright helpers |
 | `src/usage-parser.ts` | OpenCode Go page parser |
 | `src/notifier.ts` | Desktop notifications |
@@ -304,16 +334,35 @@ rm -rf ~/.config/ai-usage-watch/browser-profile-claude-ai
 ai-usage-watch --provider claude-ai
 ```
 
+**Not authenticated (Codex)**
+
+Run without `--json` to trigger the interactive login flow:
+
+```bash
+ai-usage-watch --provider codex
+```
+
+The browser session is saved in `~/.config/ai-usage-watch/browser-profile-codex/` after login.
+
+To force a fresh login:
+
+```bash
+rm -rf ~/.config/ai-usage-watch/browser-profile-codex
+ai-usage-watch --provider codex
+```
+
 **Usage not found**
 
 Run with debug to inspect the page HTML:
 
 ```bash
 ai-usage-watch --provider claude-ai --debug
+# or
+ai-usage-watch --provider codex --debug
 ```
 
 If extraction fails, the page HTML is saved to `~/.config/ai-usage-watch/debug.html`.
-This file may contain private account details — do not share it publicly or commit it.
+This file may contain private account details, Codex analytics, or session-specific page content — do not share it publicly or commit it.
 
 ## License
 

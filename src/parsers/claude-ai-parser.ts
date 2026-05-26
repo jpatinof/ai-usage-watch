@@ -65,6 +65,7 @@ export function toUsageResults(rows: ParsedUsageRow[]): UsageResult[] {
     name: row.name,
     used: row.pct,
     limit: 100,
+    unit: 'percent',
     pct: row.pct,
     bars: getBars(row.pct),
     reset: row.reset,

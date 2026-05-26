@@ -12,7 +12,7 @@ The codebase has a small multi-provider seam:
 |----------|---------------|
 | `opencode-go` | Supported and default. Uses Playwright with a persistent browser profile to read the OpenCode Go workspace usage page. |
 | `claude-code` | Placeholder only. Do not claim personal subscription usage is supported until a public/reliable source exists. |
-| `codex` | Placeholder only. Do not claim personal subscription usage is supported until a public/reliable source exists. |
+| `codex` | Supported via user-approved private ChatGPT/Codex analytics page scraping with Playwright. Fragile by nature; keep it isolated behind the provider seam. |
 
 ## Setup commands
 
@@ -55,7 +55,8 @@ Notes:
 | `src/cli.ts` | CLI flag parsing and help text. |
 | `src/config.ts` | Config/env/CLI precedence and validation. |
 | `src/app.ts` | Provider-agnostic usage orchestration and notifications. |
-| `src/providers.ts` | Provider registry, provider IDs, OpenCode Go adapter, unsupported placeholders. |
+| `src/providers.ts` | Provider registry, provider IDs, supported adapters, and unsupported placeholders. |
+| `src/providers/codex.ts` | Codex-specific Playwright login/navigation/scraping helpers. |
 | `src/browser.ts` | OpenCode-specific Playwright login/navigation/scraping helpers. |
 | `src/usage-parser.ts` | OpenCode Go usage parser. |
 | `src/output.ts` | Human and JSON output formatting. |
@@ -84,7 +85,7 @@ When adding or changing providers:
 3. Keep provider metadata accurate: display name, support state, browser requirements, titles, and error messages.
 4. If a provider uses Playwright/browser automation, mark it with `requiresBrowser` so config validation can fail early with a useful browser error.
 5. Add config validation only for the providers that need it. Unsupported providers should fail with a provider-specific message, not with unrelated OpenCode workspace/browser errors.
-6. Do not scrape private web apps such as `claude.ai` or `chatgpt.com` unless the maintainer explicitly approves the tradeoff.
+6. Do not scrape private web apps such as `claude.ai` or `chatgpt.com` unless the maintainer explicitly approves the tradeoff. Codex scraping is approved for the existing ChatGPT/Codex analytics page provider only.
 7. Do not read credential files for usage data. Files such as `~/.codex/auth.json` or Claude credentials are sensitive auth state, not usage sources.
 8. If using official admin APIs, clearly distinguish API/org usage from personal subscription quota.
 
@@ -112,7 +113,7 @@ When adding or changing providers:
 
 - Keep `README.md` user-facing and concise.
 - Put agent-only implementation context here.
-- If a provider is a placeholder, say so directly. Do not imply Claude Code or Codex personal subscription usage is implemented.
+- If a provider is a placeholder, say so directly. Do not imply Claude Code personal subscription usage is implemented.
 - Update CLI examples when adding flags, env vars, or config keys.
 
 ## Commit guidance

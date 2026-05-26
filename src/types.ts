@@ -44,6 +44,7 @@ export interface UsageResult {
   name: string;
   used: number;
   limit: number;
+  unit?: 'usd' | 'percent';
   pct: number;
   bars: string;
   reset: string;

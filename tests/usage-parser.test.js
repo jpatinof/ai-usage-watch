@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extractUsages, getBars, parseResetTime } from '../dist/usage-parser.js';
 import { parseClaudeAiUsage } from '../dist/parsers/claude-ai-parser.js';
+import { parseCodexUsage, toCodexUsageResults } from '../dist/parsers/codex-parser.js';
 
 test('parseResetTime formats days, hours, and minutes', () => {
   assert.equal(parseResetTime('Resets in 2 days 3 hours'), '2d 3h');
@@ -104,4 +105,53 @@ test('parseClaudeAiUsage reads English and Spanish page text', () => {
   assert.equal(spanishRows[1].pct, 15);
   assert.equal(englishRows[1].reset, 'fri, 12:00 AM');
   assert.equal(spanishRows[1].reset, 'vie, 12:00 a.m.');
+});
+
+test('parseCodexUsage reads 5 hour and weekly remaining limits', () => {
+  const rows = parseCodexUsage(`
+    5 hour usage limit
+    75% remaining
+    Resets in 2 hours
+    Weekly usage limit
+    40% remaining
+    Resets monday
+  `);
+  const usages = toCodexUsageResults(rows);
+
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map(row => row.name), ['5h', 'Weekly']);
+  assert.equal(usages[0].used, 25);
+  assert.equal(usages[0].pct, 25);
+  assert.equal(usages[0].limit, 100);
+  assert.equal(usages[0].reset, 'in 2 hours');
+  assert.equal(usages[1].used, 60);
+  assert.equal(usages[1].reset, 'monday');
+});
+
+test('parseCodexUsage supports split percentage and remaining lines', () => {
+  const usages = toCodexUsageResults(parseCodexUsage(`
+    5 hour usage limit
+    5%
+    remaining
+    Weekly usage limit
+    100%
+    remaining
+  `));
+
+  assert.equal(usages.length, 2);
+  assert.equal(usages[0].used, 95);
+  assert.equal(usages[0].reset, '');
+  assert.equal(usages[1].used, 0);
+});
+
+test('parseCodexUsage skips usage limits without remaining percentage', () => {
+  const rows = parseCodexUsage(`
+    5 hour usage limit
+    Resets in 2 hours
+    Weekly usage limit
+    20% remaining
+  `);
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].name, 'Weekly');
 });

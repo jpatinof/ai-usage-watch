@@ -9,8 +9,8 @@ Usage:
   ai-usage-watch [options]
 
 Options:
-  --provider <id>    Usage provider. Defaults to opencode-go.
-  --workspace <id>   OpenCode workspace ID. Recommended for every user.
+  --provider <id>    Usage provider: opencode-go, claude-ai, codex, or claude-code. Defaults to opencode-go.
+  --workspace <id>   OpenCode workspace ID. Required only for opencode-go.
   --chromium <path>  Chromium-compatible browser executable path.
   --no-notify        Disable desktop notifications.
   --json             Print usage as JSON. Also disables notifications.
@@ -41,7 +41,8 @@ Config file example (${DEFAULT_CONFIG_FILE}):
   }
 
 Required:
-  Configure a workspace ID before running the AI Usage Watch.`);
+  Configure a workspace ID before running opencode-go.
+  Browser-based providers reuse isolated persistent profiles under the app config directory.`);
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {

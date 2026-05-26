@@ -148,12 +148,36 @@ test('resolveConfig requires a browser for supported Playwright providers', () =
     localEnvFile: missingEnv,
     chromiumCandidates: [],
   }), /No Chromium-compatible browser found/);
+
+  assert.throws(() => resolveConfig(parseArgs(['--provider', 'codex']), {
+    AI_USAGE_WATCH_CONFIG: missingConfig,
+  }, {
+    defaultEnvFile: missingEnv,
+    localEnvFile: missingEnv,
+    chromiumCandidates: [],
+  }), /No Chromium-compatible browser found/);
+});
+
+test('resolveConfig does not require workspace ID for codex', () => {
+  const { browser, missingConfig, missingEnv } = fixturePaths();
+
+  const config = resolveConfig(parseArgs(['--provider', 'codex']), {
+    AI_USAGE_WATCH_CONFIG: missingConfig,
+  }, {
+    defaultEnvFile: missingEnv,
+    localEnvFile: missingEnv,
+    chromiumCandidates: [browser],
+  });
+
+  assert.equal(config.providerId, 'codex');
+  assert.equal(config.workspaceId, '');
+  assert.equal(config.chromiumPath, browser);
 });
 
 test('resolveConfig does not require browser config for unsupported providers', () => {
   const { missingConfig, missingEnv } = fixturePaths();
 
-  const config = resolveConfig(parseArgs(['--provider', 'codex']), {
+  const config = resolveConfig(parseArgs(['--provider', 'claude-code']), {
     AI_USAGE_WATCH_CONFIG: missingConfig,
   }, {
     defaultEnvFile: missingEnv,
@@ -161,7 +185,7 @@ test('resolveConfig does not require browser config for unsupported providers', 
     chromiumCandidates: [],
   });
 
-  assert.equal(config.providerId, 'codex');
+  assert.equal(config.providerId, 'claude-code');
   assert.equal(config.chromiumPath, '');
 });
 
@@ -169,7 +193,7 @@ test('unsupported providers ignore invalid browser paths until provider executio
   const { dir, missingConfig, missingEnv } = fixturePaths();
   const missingBrowser = join(dir, 'missing-browser');
 
-  const config = resolveConfig(parseArgs(['--provider', 'codex', '--chromium', missingBrowser, '--json']), {
+  const config = resolveConfig(parseArgs(['--provider', 'claude-code', '--chromium', missingBrowser, '--json']), {
     AI_USAGE_WATCH_CONFIG: missingConfig,
   }, {
     defaultEnvFile: missingEnv,
@@ -177,9 +201,15 @@ test('unsupported providers ignore invalid browser paths until provider executio
     chromiumCandidates: [],
   });
 
-  assert.equal(config.providerId, 'codex');
+  assert.equal(config.providerId, 'claude-code');
   assert.equal(config.chromiumPath, missingBrowser);
-  await assert.rejects(() => getUsage(config), /Codex personal subscription usage is not supported yet/);
+  await assert.rejects(() => getUsage(config), /Claude Code personal subscription usage is not supported yet/);
+});
+
+test('getPlatformPaths includes isolated Codex browser profile', () => {
+  const paths = getPlatformPaths({ platform: 'linux', homeDir: '/home/tester', env: {} });
+
+  assert.equal(paths.codexProfileDir, '/home/tester/.config/ai-usage-watch/browser-profile-codex');
 });
 
 test('resolveConfig rejects malformed JSON config values', () => {
