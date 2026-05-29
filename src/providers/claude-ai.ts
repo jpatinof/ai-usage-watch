@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { chromium, type BrowserContext, type Page } from 'playwright';
@@ -41,6 +41,32 @@ function markClaudeAiAuthenticatedProfile(): void {
     writeFileSync(AUTH_MARKER_FILE, new Date().toISOString(), { mode: 0o600 });
   } catch {
     // Best effort: the browser profile still owns the real session state.
+  }
+}
+
+function clearClaudeAiAuthMarker(): void {
+  try {
+    unlinkSync(AUTH_MARKER_FILE);
+  } catch {
+    // Best effort: file may not exist.
+  }
+}
+
+async function looksLikeClaudeAiSessionExpired(page: Page): Promise<boolean> {
+  if (isClaudeAiAuthUrl(page.url())) return true;
+
+  try {
+    const url = new URL(page.url());
+    if (url.hostname === 'claude.ai' && !url.pathname.startsWith('/settings/usage')) return true;
+  } catch {
+    // ignore URL parse errors
+  }
+
+  try {
+    const text = await page.evaluate(() => document.body?.innerText?.toLowerCase() ?? '');
+    return /sign in|log in|continue with google|continue with github|enter your email|magic link/i.test(text);
+  } catch {
+    return false;
   }
 }
 
@@ -156,6 +182,14 @@ export const claudeAiProvider: UsageProvider = {
       }
 
       await waitForClaudeAiUsagePage(page);
+
+      if (await looksLikeClaudeAiSessionExpired(page)) {
+        clearClaudeAiAuthMarker();
+        if (config.json) throw new Error('Claude.ai session has expired. Run without --json to complete browser login.');
+        await context.close();
+        context = undefined;
+        return await runClaudeAiInteractiveLogin(config);
+      }
 
       return await extractClaudeAiUsage(config, page);
     } catch (error) {
