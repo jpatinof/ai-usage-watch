@@ -70,6 +70,49 @@ async function looksLikeClaudeAiSessionExpired(page: Page): Promise<boolean> {
   }
 }
 
+async function looksLikeBotChallenge(page: Page): Promise<boolean> {
+  try {
+    const title = await page.evaluate(() => document.title?.toLowerCase() ?? '');
+    if (/just a moment|checking your browser|cloudflare/i.test(title)) return true;
+    const text = await page.evaluate(() => document.body?.innerText?.toLowerCase() ?? '');
+    return /checking your browser|just a moment|verify you are human|i'm not a robot|please complete the security check|cloudflare ray id/i.test(text);
+  } catch {
+    return false;
+  }
+}
+
+async function runClaudeAiCaptchaResolutionFlow(config: AppConfig): Promise<UsageResult[]> {
+  const context = await launchClaudeAiContext(config, false);
+  let page: Page | undefined;
+
+  try {
+    const pages = context.pages();
+    page = pages.length > 0 ? pages[0] : await context.newPage();
+
+    console.log('  Bot challenge detected. Opening browser to resolve...');
+    await page.goto(USAGE_URL, { waitUntil: 'domcontentloaded' });
+
+    console.log('  Please complete the security check in the browser window...');
+    console.log('  The window will close automatically once the check passes.');
+    await Promise.race([
+      page.waitForFunction(
+        () => /\d+%\s*(?:used|usado)/i.test(document.body?.innerText ?? ''),
+        { timeout: INTERACTIVE_LOGIN_TIMEOUT_MS },
+      ),
+      waitForManualLoginConfirmation(),
+    ]);
+
+    await waitForClaudeAiUsagePage(page);
+    return await extractClaudeAiUsage(config, page);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.split('\n')[0] : String(error);
+    await saveDebugHtml(config, page, message);
+    throw error;
+  } finally {
+    await context.close();
+  }
+}
+
 async function waitForManualLoginConfirmation(): Promise<void> {
   const rl = createInterface({ input, output });
 
@@ -182,6 +225,13 @@ export const claudeAiProvider: UsageProvider = {
       }
 
       await waitForClaudeAiUsagePage(page);
+
+      if (await looksLikeBotChallenge(page)) {
+        if (config.json) throw new Error('Claude.ai bot challenge detected. Run without --json to resolve in browser.');
+        await context.close();
+        context = undefined;
+        return await runClaudeAiCaptchaResolutionFlow(config);
+      }
 
       if (await looksLikeClaudeAiSessionExpired(page)) {
         clearClaudeAiAuthMarker();
